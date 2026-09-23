@@ -3642,6 +3642,13 @@ elif [ "$BACKEND" = herdr ]; then
 elif [ "$BACKEND" != orca ] && [ "$TEARDOWN_WINDOWLESS" != 1 ]; then
   fm_backend_kill "$BACKEND" "$T" "$(meta_value "$META" zellij_tab_id)" "fm-$ID" \
     || endpoint_close_refusal "$ID" "$BACKEND" "$T" 1 || exit 1
+  # The T3 bearer session is a home-level credential the adapter minted for
+  # its tasks; once this home's last T3 task is closed it is revoked rather
+  # than left to expire (bin/backends/t3.sh's session contract).
+  if [ "$BACKEND" = t3 ]; then
+    fm_backend_t3_session_release_if_unused "$STATE" "$ID" \
+      || echo "warning: the T3 bearer session for this home could not be released after closing $ID; it expires on its own TTL" >&2
+  fi
 fi
 if [ "$HERDR_PRESENTATION_RETIRE_CANDIDATE" = 1 ]; then
   if [ "$(fm_backend_herdr_pane_agent_state "$HERDR_PRESENTATION_SESSION" "$HERDR_PRESENTATION_PANE")" = dead ]; then

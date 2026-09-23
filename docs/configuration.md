@@ -413,8 +413,9 @@ For spawn-capable adapters, the runtime session-provider backend controls where 
 | `zellij` | Experimental; no dedicated real-backend CI lane | [`docs/zellij-backend.md`](zellij-backend.md) |
 | `orca` | Experimental; no dedicated real-backend CI lane | [`docs/orca-backend.md`](orca-backend.md) |
 | `cmux` | Experimental; no dedicated real-backend CI lane | [`docs/cmux-backend.md`](cmux-backend.md) |
+| `t3` | Experimental; no dedicated real-backend CI lane | [`docs/t3-backend.md`](t3-backend.md) |
 
-Treehouse remains the worktree provider for tmux, herdr, zellij, and cmux, since herdr, zellij, and cmux are session providers only; Orca provides both the task worktree and terminal endpoint.
+Treehouse remains the worktree provider for tmux, herdr, zellij, cmux, and t3, since herdr, zellij, and cmux are session providers only and t3 is a GUI-host thread provider; Orca provides both the task worktree and terminal endpoint.
 
 ### Backend selection order
 
@@ -431,12 +432,12 @@ If more than one runtime marker is present, detection resolves innermost-first: 
 See [`docs/cmux-backend.md`](cmux-backend.md#runtime-detection) for why cmux can be selected when `CMUX_WORKSPACE_ID` is absent.
 
 Auto-detected Herdr stays silent like tmux, while auto-detected cmux prints a stderr notice naming `config/backend` and `--backend tmux` because cmux remains experimental.
-Zellij and Orca are never auto-detected; select them by putting the name in a local `config/backend` file, by exporting `FM_BACKEND=<name>`, or by telling the first mate in chat.
+Zellij, Orca, and T3 are never auto-detected; select them by putting the name in a local `config/backend` file, by exporting `FM_BACKEND=<name>`, or by telling the first mate in chat.
 
 ### Accepted backends and secondmate limits
 
-Any value other than `tmux`, `herdr`, `zellij`, `orca`, or `cmux` is rejected until another adapter is implemented and verified.
-`fm-spawn.sh` accepts `tmux`, `herdr`, `zellij`, `orca`, and `cmux` for ship and scout tasks; `backend=orca` and `backend=cmux` both still refuse `--secondmate` until secondmate launch semantics are designed for each.
+Any value other than `tmux`, `herdr`, `zellij`, `orca`, `cmux`, or `t3` is rejected until another adapter is implemented and verified.
+`fm-spawn.sh` accepts `tmux`, `herdr`, `zellij`, `orca`, `cmux`, and `t3` for ship and scout tasks; `backend=orca`, `backend=cmux`, and `backend=t3` all still refuse `--secondmate` until secondmate launch semantics are designed for each.
 
 `codex-app` is not an accepted runtime backend yet; [`docs/codex-app-backend.md`](codex-app-backend.md) owns the Codex App boundary.
 
@@ -455,6 +456,8 @@ The compatibility helper `fm_backend_agent_alive` continues to collapse those de
 
 - A cmux spawn additionally version-gates against the installed `cmux` binary's version, requires `jq`, and requires the control socket to be reachable and accessible (see [`docs/cmux-backend.md`](cmux-backend.md) "Setup" for the one-time socket-access configuration this needs; Automation mode is the recommended socket control mode, with Password mode supported via `config/cmux-socket-password`), refusing loudly and non-retryably on a `cmuxOnly`/unauthenticated socket.
 
+- A t3 spawn additionally requires `curl` and `jq`, a running owner-authenticated T3 Code server discoverable through its runtime file, and the claude harness family; it refuses any other harness, a raw launch command, and `--secondmate` before leasing a worktree or creating a thread (see [`docs/t3-backend.md`](t3-backend.md)).
+
 A backend spawn refusal from a missing dependency, version gate, or unauthenticated socket is terminal for that selected backend; firstmate surfaces it as a blocker instead of silently retrying another backend.
 
 ### Task metadata
@@ -469,6 +472,8 @@ Task meta records `backend=` only for a non-default backend; an absent `backend=
 - An Orca task additionally records `orca_worktree_id=` and `terminal=`, with `window=fm-<id>` kept as the shared firstmate alias.
 
 - A cmux task additionally records `cmux_workspace_id=` and `cmux_surface_id=`.
+
+- A t3 task records its T3 thread id as `window=` and additionally records `t3_thread_id=` (the same id, as the exact cleanup binding) and `t3_project_id=`.
 
 ### Task selectors
 
@@ -1209,9 +1214,11 @@ The per-backend delta is required only for the backend resolved from `FM_BACKEND
 | `zellij` | `zellij`, `jq`, `treehouse` |
 | `orca` | `orca` |
 | `cmux` | `cmux`, `jq`, `treehouse` |
+| `t3` | `t3`, `curl`, `jq`, `treehouse` |
 
-The JSON-emitting adapters (`herdr`, `zellij`, `cmux`) need `jq` because their spawn and liveness paths parse backend JSON.
-Every session-provider-only backend (`tmux`, `herdr`, `zellij`, `cmux`) uses `treehouse` for worktrees.
+The JSON-emitting adapters (`herdr`, `zellij`, `cmux`, `t3`) need `jq` because their spawn and liveness paths parse backend JSON.
+`t3` also needs `curl` because its whole transport is HTTP.
+Every session-provider-only backend (`tmux`, `herdr`, `zellij`, `cmux`, `t3`) uses `treehouse` for worktrees.
 
 Backend tool availability uses the adapter's own executable resolver, so bootstrap and spawn agree on supported non-`PATH` locations such as cmux's bundled CLI.
 An unknown resolved backend emits `BACKEND_INVALID` and blocks dispatch instead of silently dropping its dependency delta or falling back to tmux.
@@ -2208,7 +2215,10 @@ FM_DATA_OVERRIDE=        # alternate data dir, mainly for tests
 FM_PROJECTS_OVERRIDE=    # alternate projects dir, mainly for tests
 FM_CONFIG_OVERRIDE=      # alternate config dir, mainly for tests
 FM_PROC_ROOT_OVERRIDE=   # alternate /proc root for Linux process-identity reads in fm-wake-lib.sh and fm-teardown.sh, mainly for tests
-FM_BACKEND=             # optional runtime backend override for new spawns; tmux/herdr/zellij/orca/cmux support ship/scout spawns, codex-app is not accepted
+FM_BACKEND=             # optional runtime backend override for new spawns; tmux/herdr/zellij/orca/cmux/t3 support ship/scout spawns, codex-app is not accepted
+FM_T3_ORIGIN=           # t3-only: override the T3 Code server origin instead of reading its runtime file (docs/t3-backend.md)
+FM_T3_HOME=             # t3-only: override the T3 Code home (default T3CODE_HOME, then ~/.t3) whose runtime file and model manifest are read
+FM_T3_TOKEN_TTL=1h      # t3-only: TTL of each minted bearer session; refreshed inside its last five minutes
 FM_TRACE_CONTEXT=       # optional trace-context override; see "Trace context propagation"
 FM_TASK_ID=             # internal task-worker marker fm-spawn.sh exports into ship and scout panes, never set by hand; bin/fm-test-run.sh refuses to execute in the repository primary checkout while it is set
 HERDR_SESSION=default  # herdr-only: named session for normal backend ops; not enough for destructive cleanup (docs/herdr-backend.md)

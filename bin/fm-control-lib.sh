@@ -247,18 +247,27 @@ fm_control_backend_supports_key() {  # <backend> <key>
     orca)
       case "$key" in Enter|C-c) return 0 ;; esac
       ;;
+    t3)
+      # A T3 thread has no terminal: Escape and Ctrl+C both become
+      # thread.turn.interrupt and Enter is a no-op, while a composer clear has
+      # nothing to clear (bin/backends/t3.sh's fm_backend_t3_send_key).
+      case "$key" in Escape|Enter|C-c) return 0 ;; esac
+      ;;
   esac
   return 1
 }
 
-# Whether <backend> has a recovery-grade agent-state classifier. Only tmux and
-# herdr implement fm_backend_agent_state; zellij, orca, and cmux report
-# `unverified`, so no reading of theirs can prove an agent stopped. The control
-# plane refuses a stop-proving verb there instead of reporting an unprovable
-# transition as success.
+# Whether <backend> has a recovery-grade agent-state classifier. tmux and
+# herdr implement fm_backend_agent_state from the process table; t3 answers
+# from the T3 Code server's own session record, which is the supervisor of the
+# provider process reporting its lifecycle (a stop reads `stopped` with the
+# process gone, verified live). zellij, orca, and cmux report `unverified`, so
+# no reading of theirs can prove an agent stopped. The control plane refuses a
+# stop-proving verb there instead of reporting an unprovable transition as
+# success.
 fm_control_backend_state_verified() {  # <backend>
   case "${1-}" in
-    tmux|herdr) return 0 ;;
+    tmux|herdr|t3) return 0 ;;
   esac
   return 1
 }
@@ -320,6 +329,18 @@ fm_control_endpoint_absence_verdict() {  # <backend> <target>
         alive) printf 'alive\t' ;;
         missing) printf 'gone\t' ;;
         *) printf 'unproven\tthe recorded herdr session'"'"'s server could not be started, or its pane could not be classified once it was running' ;;
+      esac
+      ;;
+    t3)
+      # The server that owns the thread answers the read directly: its
+      # not-found IS the proof (T3 hides archived threads like deleted ones),
+      # a readable thread is there after all, and only an unreachable server
+      # leaves absence unproven.
+      case "$(fm_backend_t3_endpoint_absence "$target")" in
+        gone) printf 'gone\t' ;;
+        dead) printf 'dead\t' ;;
+        alive) printf 'alive\t' ;;
+        *) printf 'unproven\tthe T3 Code server that owns the thread could not be read, so the thread'"'"'s absence cannot be proven' ;;
       esac
       ;;
     *)
