@@ -90,14 +90,17 @@
 #   docs/cmux-backend.md),
 #   then tmux.
 #   Spawn-capable backends are the reference tmux adapter, verified herdr
-#   adapter, and experimental zellij, orca, and cmux adapters. Orca owns both
-#   the task worktree and terminal, so ship/scout Orca spawns do not run
+#   adapter, and experimental zellij, orca, cmux, and t3 adapters. Orca owns
+#   both the task worktree and terminal, so ship/scout Orca spawns do not run
 #   treehouse get; cmux is a session provider only, exactly like herdr/zellij,
-#   so it does. Auto-detected herdr stays silent like tmux; auto-detected cmux
-#   prints a loud stderr notice; zellij and orca are never auto-detected.
+#   so it does; t3 has no pane to type it into, so it takes a durable
+#   `treehouse get --lease` itself before creating the thread bound to that
+#   worktree. Auto-detected herdr stays silent like tmux; auto-detected cmux
+#   prints a loud stderr notice; zellij, orca, and t3 are never auto-detected.
 #   codex-app is not a known backend yet; docs/codex-app-backend.md owns that
 #   blocked backend contract. Default tmux spawns do not write backend= to meta;
-#   absent backend= means tmux. cmux does not support --secondmate spawns yet.
+#   absent backend= means tmux. cmux and t3 do not support --secondmate spawns
+#   yet.
 #   A backend spawn refusal (missing dependency, version gate, unauthenticated
 #   socket, or unsupported secondmate mode) is terminal for that selected backend;
 #   callers must surface it instead of silently retrying another backend.
@@ -150,9 +153,10 @@
 #   owns the claim and bin/fm-teardown.sh owns what it protects. A slot that
 #   cannot be claimed refuses the spawn rather than launching a worker whose slot
 #   could later be released out from under its successor. A spawn that aborts
-#   while it still holds the allocation lock drops its own claim; an abort after
-#   metadata publication has released that lock leaves the claim in place, and
-#   the next spawn's claim replaces it.
+#   while it still holds the allocation lock drops its own claim, except a t3
+#   abort whose thread close is unproven (spawn_abort_cleanup owns that rule);
+#   an abort after metadata publication has released that lock leaves the claim
+#   in place, and the next spawn's claim replaces it.
 #   The local root is whatever bin/fm-wake-lib.sh's
 #   fm_firstmate_root_home resolves, so a home seeded from another machine anchors
 #   that lock itself rather than failing to resolve one;
