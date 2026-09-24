@@ -126,5 +126,5 @@ tests/fm-teardown-endpoint-safety.test.sh
 tests/fm-control.test.sh
 ```
 
-The portable suite drives the adapter, the spawn, peek, control, and teardown paths against `tests/t3-fake-server.py`, a fake server speaking the observed response shapes.
+The portable suite drives the adapter, the spawn, peek, control, and teardown paths against `tests/t3-fake-server.py`, a fake server speaking the observed response shapes plus one defensive model, a dispatch 404 that names a resource, which v0.0.42 was never seen to send.
 [`verification/runtime-backends.md`](verification/runtime-backends.md#t3-code) records the live evidence against a real T3 Code server, including what survives a T3-launched worker.

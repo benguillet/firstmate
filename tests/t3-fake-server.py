@@ -26,6 +26,9 @@ mutate it with jq between calls:
   fail-thread-read-once  presence makes the next thread detail read answer
                        500, then removes itself
   fail-turn-start      presence makes thread.turn.start answer 500
+  unlanded-turn-start  presence makes thread.turn.start answer 200 without
+                       appending the message, a turn accepted but not yet
+                       visible in a readable thread's transcript
   fail-session-stop    presence makes thread.session.stop answer 200 but
                        change nothing (the ignored stop observed after archive)
   fail-runtime-mode-set  presence makes thread.runtime-mode.set answer 200
@@ -39,8 +42,9 @@ mutate it with jq between calls:
   fail-dispatch        presence makes every authorized dispatch answer 500,
                        the capability probe's empty command included
   dispatch-thread-not-found  presence makes every well-formed command answer
-                       404 thread_not_found, a dispatch 404 that names a
-                       resource rather than a missing route
+                       404 thread_not_found: a defensive model of a dispatch
+                       404 that names a resource, a shape never observed on
+                       v0.0.42 (which answers such commands 500)
 Archived and deleted threads answer 404 thread_not_found and vanish from the
 shell listing, as the real server does.
 """
@@ -264,7 +268,7 @@ class Handler(BaseHTTPRequestHandler):
                 if flag("fail-turn-start"):
                     internal()
                     return
-                if thread_visible(thread):
+                if thread_visible(thread) and not flag("unlanded-turn-start"):
                     message = cmd.get("message") or {}
                     thread["messages"].append({
                         "id": message.get("messageId", str(uuid.uuid4())),

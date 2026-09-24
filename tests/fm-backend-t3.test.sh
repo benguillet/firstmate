@@ -157,7 +157,7 @@ t3_case() {
   rm -f "$FAKE/fail-thread-create" "$FAKE/fail-turn-start" "$FAKE/fail-session-stop" "$FAKE/fail-archive" \
     "$FAKE/fail-runtime-mode-set" "$FAKE/fail-thread-read" "$FAKE/fail-thread-read-once" \
     "$FAKE/on-turn-status" "$FAKE/on-interrupt-status" "$FAKE/no-dispatch-route" \
-    "$FAKE/fail-dispatch" "$FAKE/dispatch-thread-not-found"
+    "$FAKE/fail-dispatch" "$FAKE/dispatch-thread-not-found" "$FAKE/unlanded-turn-start"
 }
 
 # t3_env <cmd...>: the environment every adapter and script call shares.
@@ -569,7 +569,13 @@ test_send_text_submit_is_a_turn_start() {
   rm -f "$FAKE/fail-thread-read"
   [ "$out" = pending ] || fail "an accepted turn whose landing re-read fails should report pending, got '$out'"
   [ "$(dispatch_types)" = "thread.turn.start" ] || fail "an accepted turn must not be resent, got '$(dispatch_types)'"
-  pass "fm_backend_t3_send_text_submit: a 2xx turn.start is delivery, a busy thread queues, a gone thread is not retried, an unread landing is pending"
+  : > "$FAKE/unlanded-turn-start"
+  : > "$FAKE/dispatch.log"
+  out=$(t3_call fm_backend_t3_send_text_submit "$tid" "accepted, not yet visible" 3 0.01 0.01)
+  rm -f "$FAKE/unlanded-turn-start"
+  [ "$out" = pending ] || fail "an accepted turn the readable thread does not show yet should report pending, got '$out'"
+  [ "$(dispatch_types)" = "thread.turn.start" ] || fail "an accepted, not yet visible turn must not be resent, got '$(dispatch_types)'"
+  pass "fm_backend_t3_send_text_submit: a 2xx turn.start is delivery, a busy thread queues, a gone thread is not retried, an unread or not yet visible landing is pending"
 }
 
 test_send_key_maps_interrupt_and_enter() {

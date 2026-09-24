@@ -404,10 +404,9 @@ fm_backend_t3_tmpfile() {
 }
 
 # fm_backend_t3_dispatch: one command. Prints the response body; returns the
-# HTTP helper's status, 4 on a 404, which is never worth retrying: on v0.0.42
-# a dispatch 404 whose body carries no reason is the route itself missing,
-# reported as the removed endpoint, and one carrying a reason names a resource
-# the server does not know.
+# HTTP helper's status, 4 on a 404, which is never worth retrying. A dispatch
+# 404 whose body carries no reason is the verified v0.0.42 route-missing shape,
+# reported as the removed endpoint; any other 404 is reported with its reason.
 fm_backend_t3_dispatch() {  # <command-json> -> response body
   local out rc=0
   out=$(fm_backend_t3_tmpfile) || return 1
@@ -743,7 +742,7 @@ fm_backend_t3_message_landed() {  # <thread-id> <message-id>
   local body rc=0
   body=$(fm_backend_t3_thread_json "$1" 2>/dev/null) || rc=$?
   [ "$rc" -eq 0 ] || return "$rc"
-  printf '%s' "$body" | jq -e --arg mid "$2" '.thread.messages[]? | select(.id == $mid)' >/dev/null 2>&1
+  printf '%s' "$body" | jq -e --arg mid "$2" '.thread.messages[]? | select(.id == $mid)' >/dev/null 2>&1 || return 1
 }
 
 fm_backend_t3_turn_interrupt() {  # <thread-id>
@@ -857,11 +856,12 @@ fm_backend_t3_send_key() {  # <thread-id> <key> [expected-label]
 
 # fm_backend_t3_send_text_submit: one thread.turn.start, then a re-read that
 # finds the message in the thread's transcript; that is delivery and reports
-# `empty`. A dispatch 404 (fm_backend_t3_dispatch) reports `send-failed`
-# without retrying, after the capability check names a removed endpoint, and
-# so does a thread the re-read finds gone after a silently dropped turn; other
-# dispatch failures retry <retries> times; an accepted send whose landing
-# could not be read reports `pending`: accepted, landing not confirmed.
+# `empty`. A dispatch 404 reports `send-failed` without retrying, after the
+# capability check names a removed endpoint when the 404 is the verified
+# route-missing shape, and so does a thread the re-read finds gone after a
+# silently dropped turn; other dispatch failures retry <retries> times; an
+# accepted send whose landing could not be read or is not yet visible reports
+# `pending`: accepted, landing not confirmed.
 fm_backend_t3_send_text_submit() {  # <thread-id> <text> <retries> <enter-sleep> <settle> [expected-label]
   local thread=$1 text=$2 retries=${3:-1} sleep_s=${4:-0.5} attempt=0 rc mid mode
   case "$retries" in ''|*[!0-9]*|0) retries=1 ;; esac
