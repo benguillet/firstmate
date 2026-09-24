@@ -11,7 +11,7 @@ Pick T3 Code when you already run your primary session or your day in T3 Code an
 
 Prerequisites:
 
-- T3 Code 0.0.42 or newer, with its server running as the same user: `t3 serve`, or `t3 service install` for the background service.
+- T3 Code v0.0.42, the one version this backend is verified against (see [Version pin](#version-pin)), with its server running as the same user: `t3 serve`, or `t3 service install` for the background service.
 - The `t3` CLI on `PATH`, `curl`, and `jq`.
 - Claude Code installed and authenticated for T3's `claudeAgent` provider; the worker harness must be `claude`.
 - The universal harness and toolchain requirements in [`configuration.md`](configuration.md#toolchain), including Treehouse.
@@ -24,6 +24,14 @@ A spawn stops before anything is leased or created when a required tool is missi
 
 Verify setup by spawning a small task and confirming metadata contains `backend=t3`, `t3_thread_id=`, and `t3_project_id=`, then opening the thread in T3 Code under the repository's project.
 Routine supervision does not require the GUI: `bin/fm-peek.sh <id>` renders the thread's transcript tail, and `FM_HOME=<home> bin/fm-send.sh <id> '<text>'` steers it.
+
+## Version pin
+
+This backend is verified against T3 Code v0.0.42 only, and it claims no newer release.
+T3's pending Orchestrator V2 rewrite ([pingdotgg/t3code#2829](https://github.com/pingdotgg/t3code/pull/2829)) removes `POST /api/orchestration/dispatch`, the only write path this backend has, and renames the thread commands it sends, while keeping the shell and thread reads, so a server carrying V2 cannot run this backend even though it still answers reads.
+Before a spawn, relaunch, interrupt, or exit does any real work, Firstmate probes that endpoint and refuses a server that no longer exposes it, with a message naming the verified version and the V2 removal, rather than failing partway through the action.
+A write that still reaches a server without the endpoint fails with the same message and changes nothing.
+Once V2 ships a supported script-callable write path, the transport is expected to move onto it.
 
 ## Projects, threads, and the worktree binding
 
@@ -98,6 +106,7 @@ Archived threads stay in T3's archive list; Firstmate never deletes a thread.
 ## Active limits
 
 - T3 Code is experimental and explicit-only, and supports the `claude` harness family only, because only claude's settings-file wiring is verified to load through T3's launch.
+- Only T3 Code v0.0.42 is supported; a server without the pre-V2 dispatch endpoint is refused (see [Version pin](#version-pin)).
 - Secondmate spawns are unsupported.
 - The claude system-prompt trust statement a terminal launch adds cannot be delivered, because no settings key carries it and T3 sets the command line; the brief's own worker-role section still establishes the task identity.
 - The provider runs with the credentials T3's server holds; `CLAUDE_CONFIG_DIR` and the launch-environment allowlist do not reach it.

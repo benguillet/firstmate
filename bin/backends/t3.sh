@@ -96,6 +96,21 @@
 # activity summaries in time order, the last N lines, plus one footer line with
 # the session and turn state so a peek shows live state and a changed state
 # changes the watcher's screen hash.
+#
+# Version pin. This adapter is verified against T3 Code v0.0.42 only. T3's
+# Orchestrator V2 rewrite (https://github.com/pingdotgg/t3code/pull/2829)
+# removes POST /api/orchestration/dispatch - the only write path above - and
+# renames the thread commands it carries, while its HTTP contract keeps the
+# shell and thread GET reads, so a read succeeding proves nothing about the
+# write path. fm_backend_t3_dispatch_check probes the write path itself before
+# a spawn, relaunch, or control action does real work: an authenticated POST
+# of an empty JSON object is decoded and refused as 400 with nothing dispatched
+# by a server that exposes the route, and an unknown route answers 404 (both
+# verified on v0.0.42; docs/verification/runtime-backends.md). 400 therefore
+# passes, 404 refuses with a message naming the verified version and the V2
+# removal, and any other answer refuses as a server this adapter was not
+# verified against. A write that still reaches a server without the endpoint
+# fails with the same message and changes nothing.
 
 # Shared composer-content classifier is deliberately NOT sourced here: a T3
 # thread has no composer. fm_backend_t3_composer_state answers from session
@@ -107,6 +122,8 @@ FM_T3_STOP_WAIT=${FM_T3_STOP_WAIT:-15}
 FM_T3_START_WAIT=${FM_T3_START_WAIT:-60}
 FM_T3_CAPTURE_TURNS=${FM_T3_CAPTURE_TURNS:-6}
 FM_BACKEND_T3_HTTP_CODE=
+FM_BACKEND_T3_VERIFIED_VERSION=v0.0.42
+FM_BACKEND_T3_V2_URL=https://github.com/pingdotgg/t3code/pull/2829
 
 fm_backend_t3_tool_check() {
   local missing=
@@ -397,6 +414,7 @@ fm_backend_t3_dispatch() {  # <command-json> -> response body
     return 0
   fi
   echo "error: t3 dispatch $(printf '%s' "$1" | jq -r '.type // "command"' 2>/dev/null) failed: $(fm_backend_t3_error_reason "$out" "$FM_BACKEND_T3_HTTP_CODE")" >&2
+  [ "$rc" -ne 4 ] || fm_backend_t3_dispatch_removed_message "$(fm_backend_t3_origin 2>/dev/null)"
   rm -f "$out"
   return "$rc"
 }
@@ -449,9 +467,41 @@ fm_backend_t3_account_pin_check() {
   return 1
 }
 
+fm_backend_t3_dispatch_removed_message() {  # <origin>
+  echo "error: backend=t3: the T3 Code server at ${1:-the discovered origin} does not expose POST /api/orchestration/dispatch, the only write path this backend has; Firstmate's T3 backend is verified against T3 Code $FM_BACKEND_T3_VERIFIED_VERSION only, and T3's Orchestrator V2 ($FM_BACKEND_T3_V2_URL) removes that endpoint and renames the thread commands, so run the verified $FM_BACKEND_T3_VERIFIED_VERSION server or use another backend" >&2
+}
+
+# fm_backend_t3_dispatch_check: the version pin's capability gate (header).
+# Refuses unless the server still exposes the dispatch endpoint; probes once
+# per origin per shell, and never dispatches an accepted command.
+fm_backend_t3_dispatch_check() {
+  local origin out
+  origin=$(fm_backend_t3_origin) || return 1
+  [ "${_FM_BACKEND_T3_DISPATCH_OK:-}" != "$origin" ] || return 0
+  out=$(fm_backend_t3_tmpfile) || return 1
+  fm_backend_t3_http POST /api/orchestration/dispatch "$out" '{}' || true
+  rm -f "$out"
+  case "$FM_BACKEND_T3_HTTP_CODE" in
+    400)
+      _FM_BACKEND_T3_DISPATCH_OK=$origin
+      return 0
+      ;;
+    404)
+      fm_backend_t3_dispatch_removed_message "$origin"
+      return 1
+      ;;
+    000)
+      return 1
+      ;;
+  esac
+  echo "error: backend=t3: the dispatch capability probe against $origin answered HTTP $FM_BACKEND_T3_HTTP_CODE where T3 Code $FM_BACKEND_T3_VERIFIED_VERSION refuses the empty command with 400; refusing a server this backend was not verified against" >&2
+  return 1
+}
+
 fm_backend_t3_runtime_check() {
   fm_backend_t3_tool_check || return 1
   fm_backend_t3_origin >/dev/null || return 1
+  fm_backend_t3_dispatch_check || return 1
   fm_backend_t3_shell >/dev/null || {
     echo "error: backend=t3 requires a reachable, owner-authenticated T3 Code server; the shell snapshot read failed" >&2
     return 1

@@ -1742,6 +1742,10 @@ if [ "$RELAUNCH" -eq 1 ]; then
   RELAUNCH_TARGET=$FM_BACKEND_VALIDATED_TARGET
   fm_backend_validate_spawn "$BACKEND" || exit 1
   fm_backend_source "$BACKEND" || exit 1
+  # A T3 relaunch writes through the dispatch endpoint the adapter's version
+  # pin gates, so a server without it refuses here, before the thread is read
+  # or the record changes (bin/backends/t3.sh's header).
+  [ "$BACKEND" != t3 ] || fm_backend_t3_dispatch_check || exit 1
   # A relaunch must PROVE the previous agent is gone before it launches another
   # one into the same endpoint, and only tmux and herdr have a recovery-grade
   # classifier that can (bin/fm-control-lib.sh owns that capability table).

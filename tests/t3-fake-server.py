@@ -32,6 +32,10 @@ mutate it with jq between calls:
                        but change nothing
   fail-archive         presence makes thread.archive answer 200 but change
                        nothing, so a re-read still finds the thread
+  no-dispatch-route    presence makes POST /api/orchestration/dispatch answer
+                       404 with an empty body, the shape v0.0.42 gives an
+                       unknown route and the surface T3's Orchestrator V2
+                       leaves behind (bin/backends/t3.sh's version pin)
 Archived and deleted threads answer 404 thread_not_found and vanish from the
 shell listing, as the real server does.
 """
@@ -170,9 +174,12 @@ class Handler(BaseHTTPRequestHandler):
         self._error(404, "EnvironmentResourceNotFoundError", "route_not_found", "not_found")
 
     def do_POST(self) -> None:  # noqa: N802
+        parts = urlsplit(self.path)
+        if parts.path == "/api/orchestration/dispatch" and flag("no-dispatch-route"):
+            self._send(404, None)
+            return
         if not self._authorized():
             return
-        parts = urlsplit(self.path)
         if parts.path != "/api/orchestration/dispatch":
             self._error(404, "EnvironmentResourceNotFoundError", "route_not_found", "not_found")
             return

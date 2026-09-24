@@ -156,7 +156,7 @@ t3_case() {
   : > "$FAKE/dispatch.log"
   rm -f "$FAKE/fail-thread-create" "$FAKE/fail-turn-start" "$FAKE/fail-session-stop" "$FAKE/fail-archive" \
     "$FAKE/fail-runtime-mode-set" "$FAKE/fail-thread-read" "$FAKE/fail-thread-read-once" \
-    "$FAKE/on-turn-status" "$FAKE/on-interrupt-status"
+    "$FAKE/on-turn-status" "$FAKE/on-interrupt-status" "$FAKE/no-dispatch-route"
 }
 
 # t3_env <cmd...>: the environment every adapter and script call shares.
@@ -641,6 +641,93 @@ test_session_stop_and_kill_order_and_proof() {
   status=$?
   [ "$status" -ne 0 ] || fail "a kill against an unreachable server must not report success"
   pass "fm_backend_t3_kill: stop, then archive, then a 404 re-read; unproven closes refuse"
+}
+
+# --- version pin ------------------------------------------------------------------------
+
+test_dispatch_gate_pins_the_verified_server() {
+  local proj pid id out status tid meta
+  t3_case dispatch-gate
+  proj="$CASE_DIR/project"
+  fm_git_init_commit "$proj"
+  pid=$(uuid)
+  seed_project "$pid" "$(cd "$proj" && pwd -P)"
+  printf 'claude\n' > "$HOME_DIR/config/crew-harness"
+
+  # Supported: the probe is one empty command the server refuses, never one it accepts.
+  : > "$FAKE/http.log"
+  out=$(t3_call fm_backend_t3_dispatch_check 2>&1)
+  status=$?
+  expect_code 0 "$status" "a server exposing the dispatch endpoint should pass the gate"$'\n'"$out"
+  assert_contains "$(cat "$FAKE/http.log")" "POST /api/orchestration/dispatch 400" "the probe should be the empty command the server refuses"
+  [ -z "$(dispatch_types)" ] || fail "the probe must never be an accepted command, got '$(dispatch_types)'"
+  assert_no_token_leak "gate" "$out"
+  pass "fm_backend_t3_dispatch_check: a server exposing POST /api/orchestration/dispatch passes without dispatching a command"
+
+  # Missing: the surface T3's Orchestrator V2 leaves behind.
+  : > "$FAKE/no-dispatch-route"
+  out=$(t3_call fm_backend_t3_dispatch_check 2>&1)
+  status=$?
+  [ "$status" -ne 0 ] || fail "a server without the dispatch endpoint must refuse"
+  assert_contains "$out" "does not expose POST /api/orchestration/dispatch" "the refusal should name the missing endpoint"
+  assert_contains "$out" "verified against T3 Code v0.0.42" "the refusal should name the verified version"
+  assert_contains "$out" "https://github.com/pingdotgg/t3code/pull/2829" "the refusal should point at the V2 removal"
+  pass "fm_backend_t3_dispatch_check: a server without the dispatch endpoint is refused, naming the verified version and the V2 removal"
+
+  # A spawn refuses before any lease, project, or thread.
+  id=t3v2spawnz1
+  fm_test_spawn_brief "$HOME_DIR" "$id"
+  : > "$T3LOG"
+  out=$(t3_env FM_SPAWN_NO_GUARD=1 "$ROOT/bin/fm-spawn.sh" "$id" "$proj" claude --mode no-mistakes --yolo off --backend t3 2>&1)
+  status=$?
+  [ "$status" -ne 0 ] || fail "a spawn against a server without the dispatch endpoint must refuse"$'\n'"$out"
+  assert_contains "$out" "verified against T3 Code v0.0.42" "the spawn refusal should name the verified version"
+  assert_not_contains "$(cat "$T3LOG")" $'treehouse\x1f''get' "a refused spawn must lease no worktree"
+  [ -z "$(dispatch_types)" ] || fail "a refused spawn must dispatch nothing, got '$(dispatch_types)'"
+  assert_absent "$HOME_DIR/state/$id.meta" "a refused spawn must publish no record"
+  pass "fm-spawn.sh --backend t3: a server without the dispatch endpoint is refused before any lease or thread exists"
+
+  # Control and relaunch on a task spawned against a supported server refuse
+  # up front once the endpoint is gone, before the thread is read or changed.
+  rm -f "$FAKE/no-dispatch-route"
+  id=t3v2ctlz1
+  fm_test_spawn_brief "$HOME_DIR" "$id"
+  out=$(t3_env FM_SPAWN_NO_GUARD=1 FM_T3_START_WAIT=5 \
+    "$ROOT/bin/fm-spawn.sh" "$id" "$proj" claude --model claude-test-model --mode no-mistakes --yolo off --backend t3 2>&1)
+  status=$?
+  expect_code 0 "$status" "the spawn against the supported server should succeed"$'\n'"$out"
+  tid=$(dispatch_last thread.create .threadId)
+  meta="$HOME_DIR/state/$id.meta"
+  : > "$FAKE/no-dispatch-route"
+  : > "$FAKE/dispatch.log"
+  : > "$FAKE/http.log"
+  out=$(t3_env FM_CONTROL_POLL=0.05 FM_CONTROL_SETTLE_WAIT=0.05 FM_CONTROL_EXIT_WAIT=3 \
+    "$ROOT/bin/fm-control.sh" "$id" interrupt 2>&1)
+  status=$?
+  [ "$status" -ne 0 ] || fail "fm-control interrupt against a server without the dispatch endpoint must refuse"$'\n'"$out"
+  assert_contains "$out" "verified against T3 Code v0.0.42" "the control refusal should name the verified version"
+  [ -z "$(dispatch_types)" ] || fail "a refused control action must dispatch nothing, got '$(dispatch_types)'"
+  ! grep -q "GET /api/orchestration/threads/$tid" "$FAKE/http.log" || fail "the control refusal should come before the thread is read"
+  [ "$(thread_field "$tid" .session.status)" = running ] || fail "a refused control action must leave the session untouched"
+  pass "fm-control.sh: a T3 task whose server lost the dispatch endpoint is refused before its thread is read"
+
+  cp "$meta" "$CASE_DIR/meta.before"
+  set_thread "$tid" '.session.status = "stopped"'
+  : > "$FAKE/http.log"
+  out=$(t3_env FM_SPAWN_NO_GUARD=1 "$ROOT/bin/fm-spawn.sh" "$id" --relaunch --harness claude 2>&1)
+  status=$?
+  [ "$status" -ne 0 ] || fail "a relaunch against a server without the dispatch endpoint must refuse"$'\n'"$out"
+  assert_contains "$out" "verified against T3 Code v0.0.42" "the relaunch refusal should name the verified version"
+  [ -z "$(dispatch_types)" ] || fail "a refused relaunch must dispatch nothing, got '$(dispatch_types)'"
+  ! grep -q "GET /api/orchestration/threads/$tid" "$FAKE/http.log" || fail "the relaunch refusal should come before the thread is read"
+  cmp -s "$meta" "$CASE_DIR/meta.before" || fail "a refused relaunch must leave the record untouched"
+  pass "fm-spawn.sh --relaunch on t3: a server without the dispatch endpoint is refused before the record changes"
+
+  rm -f "$FAKE/no-dispatch-route"
+  set_thread "$tid" '.session.status = "ready"'
+  out=$(t3_env env -u TMUX -u TMUX_PANE "$ROOT/bin/fm-teardown.sh" "$id" --force 2>&1) \
+    || fail "the case's teardown against the restored server should complete"$'\n'"$out"
+  rm -rf "/tmp/fm-$id"
 }
 
 # --- dispatcher and spawn -----------------------------------------------------------
@@ -1163,3 +1250,4 @@ test_dispatcher_routes_t3_operations
 test_spawn_t3_end_to_end_then_control_peek_and_teardown
 test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start
 test_spawn_t3_relaunch_carries_model_and_keeps_thread_on_failure
+test_dispatch_gate_pins_the_verified_server

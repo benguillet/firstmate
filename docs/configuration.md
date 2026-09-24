@@ -456,7 +456,7 @@ The compatibility helper `fm_backend_agent_alive` continues to collapse those de
 
 - A cmux spawn additionally version-gates against the installed `cmux` binary's version, requires `jq`, and requires the control socket to be reachable and accessible (see [`docs/cmux-backend.md`](cmux-backend.md) "Setup" for the one-time socket-access configuration this needs; Automation mode is the recommended socket control mode, with Password mode supported via `config/cmux-socket-password`), refusing loudly and non-retryably on a `cmuxOnly`/unauthenticated socket.
 
-- A t3 spawn additionally requires `curl` and `jq`, a running owner-authenticated T3 Code server discoverable through its runtime file, and the claude harness family; it refuses any other harness, a raw launch command, and `--secondmate` before leasing a worktree or creating a thread (see [`docs/t3-backend.md`](t3-backend.md)).
+- A t3 spawn additionally requires `curl` and `jq`, a running owner-authenticated T3 Code v0.0.42 server discoverable through its runtime file and still exposing its dispatch endpoint, and the claude harness family; it refuses any other harness, a raw launch command, and `--secondmate` before leasing a worktree or creating a thread (see [`docs/t3-backend.md`](t3-backend.md)).
 
 A backend spawn refusal from a missing dependency, version gate, or unauthenticated socket is terminal for that selected backend; firstmate surfaces it as a blocker instead of silently retrying another backend.
 

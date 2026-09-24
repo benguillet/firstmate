@@ -120,7 +120,9 @@
 #     thread.session.stop rather than a typed command, and an interrupt's
 #     postcondition is the thread still existing, because T3 itself stops the
 #     provider session after an interrupted turn and resumes it on the next
-#     message.
+#     message. A t3 task also refuses every verb up front when its T3 server
+#     no longer exposes the dispatch endpoint the verbs write through
+#     (bin/backends/t3.sh's version pin); no other backend runs that probe.
 #   - An ambiguous or unreadable endpoint state refuses; only a positively
 #     classified state acts.
 #   - A composer that visibly holds pending text refuses before an exit command
@@ -358,9 +360,15 @@ fm_control_harness_supported "$HARNESS" \
   || die "task $ID records harness '${RECORDED_HARNESS:-none}', which has no verified control mechanics; fm-control refuses to guess an interrupt key or exit command"
 
 fm_backend_validate "$BACKEND" || exit 1
-# The T3 verbs below call the adapter's own session primitives directly rather
-# than through a dispatcher wrapper that would source it on demand.
-fm_backend_source "$BACKEND" || exit 1
+if [ "$BACKEND" = t3 ]; then
+  # The T3 verbs below call the adapter's own session primitives directly
+  # rather than through a dispatcher wrapper that would source it on demand;
+  # every other backend still reaches its adapter through those wrappers, so
+  # its startup is unchanged. The adapter's version pin then refuses a server
+  # without T3's dispatch endpoint before any verb acts (bin/backends/t3.sh).
+  fm_backend_source t3 || exit 1
+  fm_backend_t3_dispatch_check || exit 1
+fi
 
 # --- shared helpers ---------------------------------------------------------
 

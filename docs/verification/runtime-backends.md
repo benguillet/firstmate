@@ -1880,6 +1880,23 @@ thread.create, unknown projectId: 500 {"_tag":"EnvironmentInternalError","code":
 malformed command body:           400, empty body
 ```
 
+### Dispatch capability probe
+
+Run on 2026-09-24 against the same T3 Code v0.0.42 server with a five-minute bearer session (`t3 auth session issue --ttl 5m --label fm-t3-probe --json`, revoked afterwards with `t3 auth session revoke <sessionId>`):
+
+```text
+POST /api/orchestration/dispatch, body {}:                                  400, empty body; nothing dispatched
+POST /api/orchestration/dispatch, body {"type":"firstmate.capability-probe"}: 400, empty body
+POST /api/orchestration/dispatch, empty body:                               400, empty body
+POST /api/orchestration/dispatch-missing, body {}:                          404, empty body (an unknown route)
+POST /api/orchestration/dispatch, no token:                                 401 {"_tag":"EnvironmentAuthInvalidError","code":"auth_invalid","reason":"missing_credential"}
+POST /api/orchestration/nope, no token:                                     404, empty body
+GET /api/orchestration/dispatch:                                            200, the client's HTML shell (the SPA fallback), so a GET cannot probe the route
+```
+
+The v0.0.42 binary's HTTP contract (`EnvironmentOrchestrationHttpApi`) registers `GET /api/orchestration/snapshot`, `GET /api/orchestration/shell`, `GET /api/orchestration/threads/:threadId`, and `POST /api/orchestration/dispatch`; the Orchestrator V2 branch's `packages/contracts/src/environmentHttp.ts` (pingdotgg/t3code#2829, read 2026-09-24) registers the shell and thread GET reads plus two new thread reads and no dispatch POST.
+`fm_backend_t3_dispatch_check` therefore sends the authenticated empty-object POST and reads 400 as the endpoint present and 404 as the endpoint gone; the fake server's `no-dispatch-route` flag models the 404, and `tests/fm-backend-t3.test.sh` pins both outcomes for the adapter, a spawn, a relaunch, and a control action.
+
 ### Tokens and read cost
 
 ```sh
@@ -1940,7 +1957,7 @@ tests/fm-teardown-endpoint-safety.test.sh
 tests/fm-control.test.sh
 ```
 
-The fake-server suite pins the response shapes above (including the accepted-but-dropped turn on an archived thread and the not-found after archive), token minting and refresh without leaking the token, the worktree-bound `thread.create`, the stop-then-archive close order and teardown's refusal to return the lease before that close is proven, and the spawn, peek, control, and teardown paths.
+The fake-server suite pins the response shapes above (including the accepted-but-dropped turn on an archived thread and the not-found after archive), token minting and refresh without leaking the token, the worktree-bound `thread.create`, the stop-then-archive close order and teardown's refusal to return the lease before that close is proven, the dispatch capability probe's supported and missing-endpoint outcomes, and the spawn, peek, control, and teardown paths.
 
 ## Codex App host tools
 
