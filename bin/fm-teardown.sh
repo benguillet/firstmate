@@ -3449,6 +3449,17 @@ if [ "$BACKEND" = herdr ]; then
   TEARDOWN_HERDR_PANE=$FM_BACKEND_HERDR_PANE
 fi
 
+# The T3 close below writes through the dispatch endpoint the adapter's version
+# pin gates, so a server without it, or one that cannot be reached, refuses
+# here, before the backlog marker, the run conclusion, or the process reap
+# (bin/backends/t3.sh's header). --force does not skip it: the close it gates
+# is never skipped either.
+if [ "$BACKEND" = t3 ]; then
+  fm_backend_source t3 || exit 1
+  fm_backend_t3_tool_check || exit 1
+  fm_backend_t3_dispatch_check || exit 1
+fi
+
 BACKLOG_CLOSED=0
 BACKLOG_TRANSITION=$TEARDOWN_BACKLOG_TRANSITION
 BACKLOG_TRANSITION_FLAGS=()

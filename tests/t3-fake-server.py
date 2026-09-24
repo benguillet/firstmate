@@ -36,6 +36,11 @@ mutate it with jq between calls:
                        404 with an empty body, the shape v0.0.42 gives an
                        unknown route and the surface T3's Orchestrator V2
                        leaves behind (bin/backends/t3.sh's version pin)
+  fail-dispatch        presence makes every authorized dispatch answer 500,
+                       the capability probe's empty command included
+  dispatch-thread-not-found  presence makes every well-formed command answer
+                       404 thread_not_found, a dispatch 404 that names a
+                       resource rather than a missing route
 Archived and deleted threads answer 404 thread_not_found and vanish from the
 shell listing, as the real server does.
 """
@@ -183,6 +188,9 @@ class Handler(BaseHTTPRequestHandler):
         if parts.path != "/api/orchestration/dispatch":
             self._error(404, "EnvironmentResourceNotFoundError", "route_not_found", "not_found")
             return
+        if flag("fail-dispatch"):
+            self._error(500, "EnvironmentInternalError", "orchestration_dispatch_failed", "internal_error")
+            return
         length = int(self.headers.get("content-length") or 0)
         raw = self.rfile.read(length) if length else b""
         try:
@@ -192,6 +200,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if not isinstance(cmd, dict) or not isinstance(cmd.get("type"), str):
             self._send(400, None)
+            return
+        if flag("dispatch-thread-not-found"):
+            self._error(404, "EnvironmentResourceNotFoundError", "thread_not_found", "not_found")
             return
         data = load_state()
         kind = cmd["type"]

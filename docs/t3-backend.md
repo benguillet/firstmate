@@ -29,8 +29,8 @@ Routine supervision does not require the GUI: `bin/fm-peek.sh <id>` renders the 
 
 This backend is verified against T3 Code v0.0.42 only, and it claims no newer release.
 T3's pending Orchestrator V2 rewrite ([pingdotgg/t3code#2829](https://github.com/pingdotgg/t3code/pull/2829)) removes `POST /api/orchestration/dispatch`, the only write path this backend has, and renames the thread commands it sends, while keeping the shell and thread reads, so a server carrying V2 cannot run this backend even though it still answers reads.
-Before a spawn, relaunch, interrupt, or exit does any real work, Firstmate probes that endpoint and refuses a server that no longer exposes it, with a message naming the verified version and the V2 removal, rather than failing partway through the action.
-A write that still reaches a server without the endpoint fails with the same message and changes nothing.
+Before a spawn, relaunch, interrupt, exit, or teardown does any real work, Firstmate probes that endpoint and refuses a server that no longer exposes it, with a message naming the verified version and the V2 removal, rather than failing partway through the action.
+A write that still reaches a server without the endpoint fails with the same message and changes nothing; only the best-effort inbox doorbell drops that message, because it discards its error output by design and leaves the retry to the watcher.
 Once V2 ships a supported script-callable write path, the transport is expected to move onto it.
 
 ## Projects, threads, and the worktree binding
@@ -97,6 +97,7 @@ A launch-delivery failure after the record exists keeps both the lease and the c
 Whatever either path leaves in place, it names in a warning.
 
 Cleanup keeps every shared Firstmate safety check: a scout still requires its report and completed decision inventory, and a ship still refuses dirty or unlanded work.
+Before its first destructive step it runs the version pin's endpoint probe, even under `--force`, so a server without the dispatch endpoint, or one it cannot reach, refuses the cleanup before the backlog is marked, a parked no-mistakes run is concluded, or any process, lease, or record is touched.
 It then stops the provider session when one is live, waits for T3 to report it stopped, archives the thread, and re-reads it: only T3's own not-found proves the close.
 Stopping first is deliberate, because a stop sent after the archive is ignored and would leave the provider process running.
 Only after that proven close does teardown return the leased worktree through Treehouse and release the task's slot claim, because a returned slot keeps the thread's `worktreePath` and T3 would start the provider there for the slot's next holder.

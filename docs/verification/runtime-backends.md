@@ -1895,7 +1895,7 @@ GET /api/orchestration/dispatch:                                            200,
 ```
 
 The v0.0.42 binary's HTTP contract (`EnvironmentOrchestrationHttpApi`) registers `GET /api/orchestration/snapshot`, `GET /api/orchestration/shell`, `GET /api/orchestration/threads/:threadId`, and `POST /api/orchestration/dispatch`; the Orchestrator V2 branch's `packages/contracts/src/environmentHttp.ts` (pingdotgg/t3code#2829, read 2026-09-24) registers the shell and thread GET reads plus two new thread reads and no dispatch POST.
-`fm_backend_t3_dispatch_check` therefore sends the authenticated empty-object POST and reads 400 as the endpoint present and 404 as the endpoint gone; the fake server's `no-dispatch-route` flag models the 404, and `tests/fm-backend-t3.test.sh` pins both outcomes for the adapter, a spawn, a relaunch, and a control action.
+`fm_backend_t3_dispatch_check` therefore sends the authenticated empty-object POST and reads 400 as the endpoint present and 404 as the endpoint gone; the fake server's `no-dispatch-route` flag models the 404, and `tests/fm-backend-t3.test.sh` pins both outcomes for the adapter, a spawn, a relaunch, a control action, and a teardown.
 
 ### Tokens and read cost
 

@@ -103,14 +103,16 @@
 # renames the thread commands it carries, while its HTTP contract keeps the
 # shell and thread GET reads, so a read succeeding proves nothing about the
 # write path. fm_backend_t3_dispatch_check probes the write path itself before
-# a spawn, relaunch, or control action does real work: an authenticated POST
-# of an empty JSON object is decoded and refused as 400 with nothing dispatched
-# by a server that exposes the route, and an unknown route answers 404 (both
-# verified on v0.0.42; docs/verification/runtime-backends.md). 400 therefore
-# passes, 404 refuses with a message naming the verified version and the V2
-# removal, and any other answer refuses as a server this adapter was not
-# verified against. A write that still reaches a server without the endpoint
-# fails with the same message and changes nothing.
+# a spawn, relaunch, control action, or teardown does real work: an
+# authenticated POST of an empty JSON object is decoded and refused as 400 with
+# nothing dispatched by a server that exposes the route, and an unknown route
+# answers 404 with an empty body (both verified on v0.0.42;
+# docs/verification/runtime-backends.md). 400 therefore passes, 404 refuses
+# with a message naming the verified version and the V2 removal, 401/403 and
+# 5xx refuse as an auth or server failure, and any other answer refuses as a
+# server this adapter was not verified against. A write that still reaches a
+# server without the endpoint fails with the same message and changes nothing;
+# the best-effort inbox doorbell discards that stderr by design.
 
 # Shared composer-content classifier is deliberately NOT sourced here: a T3
 # thread has no composer. fm_backend_t3_composer_state answers from session
@@ -402,8 +404,10 @@ fm_backend_t3_tmpfile() {
 }
 
 # fm_backend_t3_dispatch: one command. Prints the response body; returns the
-# HTTP helper's status (4 on a not-found) so a caller can tell a gone thread
-# from a server failure.
+# HTTP helper's status, 4 on a 404, which is never worth retrying: on v0.0.42
+# a dispatch 404 whose body carries no reason is the route itself missing,
+# reported as the removed endpoint, and one carrying a reason names a resource
+# the server does not know.
 fm_backend_t3_dispatch() {  # <command-json> -> response body
   local out rc=0
   out=$(fm_backend_t3_tmpfile) || return 1
@@ -414,7 +418,9 @@ fm_backend_t3_dispatch() {  # <command-json> -> response body
     return 0
   fi
   echo "error: t3 dispatch $(printf '%s' "$1" | jq -r '.type // "command"' 2>/dev/null) failed: $(fm_backend_t3_error_reason "$out" "$FM_BACKEND_T3_HTTP_CODE")" >&2
-  [ "$rc" -ne 4 ] || fm_backend_t3_dispatch_removed_message "$(fm_backend_t3_origin 2>/dev/null)"
+  if [ "$rc" -eq 4 ] && [ -z "$(jq -r '.reason // empty' "$out" 2>/dev/null)" ]; then
+    fm_backend_t3_dispatch_removed_message "$(fm_backend_t3_origin 2>/dev/null)"
+  fi
   rm -f "$out"
   return "$rc"
 }
@@ -472,29 +478,23 @@ fm_backend_t3_dispatch_removed_message() {  # <origin>
 }
 
 # fm_backend_t3_dispatch_check: the version pin's capability gate (header).
-# Refuses unless the server still exposes the dispatch endpoint; probes once
-# per origin per shell, and never dispatches an accepted command.
+# Refuses unless the server still exposes the dispatch endpoint, and never
+# dispatches an accepted command.
 fm_backend_t3_dispatch_check() {
-  local origin out
+  local origin out reason
   origin=$(fm_backend_t3_origin) || return 1
-  [ "${_FM_BACKEND_T3_DISPATCH_OK:-}" != "$origin" ] || return 0
   out=$(fm_backend_t3_tmpfile) || return 1
   fm_backend_t3_http POST /api/orchestration/dispatch "$out" '{}' || true
+  reason=$(fm_backend_t3_error_reason "$out" "$FM_BACKEND_T3_HTTP_CODE")
   rm -f "$out"
   case "$FM_BACKEND_T3_HTTP_CODE" in
-    400)
-      _FM_BACKEND_T3_DISPATCH_OK=$origin
-      return 0
-      ;;
-    404)
-      fm_backend_t3_dispatch_removed_message "$origin"
-      return 1
-      ;;
-    000)
-      return 1
-      ;;
+    400) return 0 ;;
+    404) fm_backend_t3_dispatch_removed_message "$origin" ;;
+    000) ;;
+    401|403) echo "error: backend=t3 requires an owner-authenticated T3 Code server; $origin refused the dispatch capability probe's bearer session: $reason" >&2 ;;
+    5[0-9][0-9]) echo "error: backend=t3: the T3 Code server at $origin failed the dispatch capability probe: $reason" >&2 ;;
+    *) echo "error: backend=t3: the dispatch capability probe against $origin answered $reason where T3 Code $FM_BACKEND_T3_VERIFIED_VERSION refuses the empty command with 400; refusing a server this backend was not verified against" >&2 ;;
   esac
-  echo "error: backend=t3: the dispatch capability probe against $origin answered HTTP $FM_BACKEND_T3_HTTP_CODE where T3 Code $FM_BACKEND_T3_VERIFIED_VERSION refuses the empty command with 400; refusing a server this backend was not verified against" >&2
   return 1
 }
 
@@ -857,11 +857,11 @@ fm_backend_t3_send_key() {  # <thread-id> <key> [expected-label]
 
 # fm_backend_t3_send_text_submit: one thread.turn.start, then a re-read that
 # finds the message in the thread's transcript; that is delivery and reports
-# `empty`. A thread the server no longer knows - before the send, or found
-# gone by the re-read after a silently dropped turn - reports `send-failed`
-# without retrying; other dispatch failures retry <retries> times; an accepted
-# send whose landing could not be read reports `pending`: accepted, landing not
-# confirmed.
+# `empty`. A dispatch 404 (fm_backend_t3_dispatch) reports `send-failed`
+# without retrying, after the capability check names a removed endpoint, and
+# so does a thread the re-read finds gone after a silently dropped turn; other
+# dispatch failures retry <retries> times; an accepted send whose landing
+# could not be read reports `pending`: accepted, landing not confirmed.
 fm_backend_t3_send_text_submit() {  # <thread-id> <text> <retries> <enter-sleep> <settle> [expected-label]
   local thread=$1 text=$2 retries=${3:-1} sleep_s=${4:-0.5} attempt=0 rc mid mode
   case "$retries" in ''|*[!0-9]*|0) retries=1 ;; esac
@@ -881,7 +881,10 @@ fm_backend_t3_send_text_submit() {  # <thread-id> <text> <retries> <enter-sleep>
       esac
       return 0
     fi
-    [ "$rc" -ne 4 ] || break
+    if [ "$rc" -eq 4 ]; then
+      fm_backend_t3_dispatch_check || true
+      break
+    fi
     [ "$attempt" -ge "$retries" ] || sleep "$sleep_s"
   done
   printf 'send-failed'
