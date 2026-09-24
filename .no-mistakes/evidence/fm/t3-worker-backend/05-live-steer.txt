@@ -1,0 +1,10 @@
+$ fm-send.sh t3nmlivez1 'Append exactly one status line: working [at=<epoch>]: steer received via T3. Then append done [at=<epoch>]: steer handled. Nothing else.'
+exit=0
+--- state/t3nmlivez1.status after the steer ---
+done [at=1790292827]: ready in branch fm/t3nmlivez1 /tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj
+working [at=1790292865]: steer received via T3
+done [at=1790292865]: steer handled
+--- inbox ---
+home/state/t3nmlivez1.inbox/handled/001.msg
+--- last user turn on the T3 thread (the doorbell) ---
+: Firstmate instruction waiting: list '/tmp/fm-t3-nmtest-01M3AVEE/home/state/t3nmlivez1.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-t3-nmtest-01M3AVEE/home/state/t3nmlivez1.inbox'/handled/.

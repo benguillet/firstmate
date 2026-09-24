@@ -1,0 +1,6 @@
+notice: T3 has no project rooted at /tmp/fm-t3-nmtest-01M3AVEE/home/projects/proj; using project 'proj' at /tmp/fm-t3-nmtest-01M3AVEE/captain, the T3 project for the same repository (/tmp/fm-t3-nmtest-01m3avee/origin)
+notice: t3nmguiz1 ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+🌳 Setting up worktree...
+🌳 Leased worktree at ~/.treehouse/proj-763f43/1/proj. Run 'treehouse return ~/.treehouse/proj-763f43/1/proj' to release it.
+spawned t3nmguiz1 harness=claude kind=ship mode=local-only yolo=off window=4a252e39-669d-4b67-a812-fb9e1621842c worktree=/tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj
+status: done [at=1790293328]: running in /tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj

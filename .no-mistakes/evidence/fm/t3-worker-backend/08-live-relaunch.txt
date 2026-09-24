@@ -1,0 +1,16 @@
+--- before: window=2acc67a8-98e1-4eff-8d83-6c759c4872cc spawn_gen=s1790292812.3179688.23586 t3_thread_id=2acc67a8-98e1-4eff-8d83-6c759c4872cc 
+--- before: T3 user turns=3 session=stopped
+$ fm-control.sh t3nmlivez1 relaunch --note 'relaunch check: re-read the brief; the WORKER.txt commit already exists, so only append done [at=<epoch>]: relaunch verified.'
+notice: t3nmlivez1 ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+relaunched t3nmlivez1 harness=claude from=claude model=claude-haiku-4-5 effort=default backend=t3 endpoint=2acc67a8-98e1-4eff-8d83-6c759c4872cc worktree=/tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj
+exit=0
+--- after: window=2acc67a8-98e1-4eff-8d83-6c759c4872cc spawn_gen=s1790292998.3239139.1278 t3_thread_id=2acc67a8-98e1-4eff-8d83-6c759c4872cc 
+--- after: T3 user turns=4 session=ready
+--- status tail ---
+working [at=1790292865]: steer received via T3
+done [at=1790292865]: steer handled
+blocked [at=1790293009]: Bash tool blocks foreground sleep 90 per sandbox rules; conflicts with explicit firstmate instruction in 002.msg
+$ fm-control.sh t3nmlivez1 exit   (on the relaunched, ready session)
+stopped t3nmlivez1 harness=claude backend=t3 endpoint=2acc67a8-98e1-4eff-8d83-6c759c4872cc worktree=/tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj
+exit=0
+--- T3 session=stopped

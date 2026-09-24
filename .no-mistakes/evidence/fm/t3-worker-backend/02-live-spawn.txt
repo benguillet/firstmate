@@ -1,0 +1,29 @@
+$ cat $T3CODE_HOME/userdata/server-runtime.json
+{"version":1,"pid":3093610,"host":"127.0.0.1","port":3797,"origin":"http://127.0.0.1:3797","startedAt":"2026-09-24T23:31:40.163Z"}
+
+$ fm-spawn.sh t3nmlivez1 home/projects/proj claude --model claude-haiku-4-5 --mode local-only --yolo off --backend t3   (no FM_T3_ORIGIN: discovery)
+notice: T3 has no project rooted at /tmp/fm-t3-nmtest-01M3AVEE/home/projects/proj; using project 'proj' at /tmp/fm-t3-nmtest-01M3AVEE/captain, the T3 project for the same repository (/tmp/fm-t3-nmtest-01m3avee/origin)
+notice: t3nmlivez1 ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+🌳 Setting up worktree...
+🌳 Leased worktree at ~/.treehouse/proj-763f43/1/proj. Run 'treehouse return ~/.treehouse/proj-763f43/1/proj' to release it.
+spawned t3nmlivez1 harness=claude kind=ship mode=local-only yolo=off window=2acc67a8-98e1-4eff-8d83-6c759c4872cc worktree=/tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj
+"$LIVE/fm" fm-spawn.sh t3nmlivez1 "$LIVE/home/projects/proj" claude --model    0.48s user 0.86s system 102% cpu 1.302 total
+exit=0
+--- state/t3nmlivez1.meta ---
+window=2acc67a8-98e1-4eff-8d83-6c759c4872cc
+endpoint_task_id=t3nmlivez1
+worktree=/tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj
+project=/tmp/fm-t3-nmtest-01M3AVEE/home/projects/proj
+harness=claude
+kind=ship
+mode=local-only
+yolo=off
+branch=fm/t3nmlivez1
+tasktmp=/tmp/fm-t3nmlivez1
+model=claude-haiku-4-5
+effort=default
+busy_gen=g1790292812.3180445.23620
+spawn_gen=s1790292812.3179688.23586
+backend=t3
+t3_thread_id=2acc67a8-98e1-4eff-8d83-6c759c4872cc
+t3_project_id=bf0a60ad-20c0-4069-a372-1db7aaaa3efe

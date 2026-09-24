@@ -1,0 +1,15 @@
+--- before: busy-state: v1 gen=g1790292812.3180445.23620 seq=6 state=busy source=claude-hook event=user-prompt-submit ts=1790292887
+--- before: T3 session=running
+$ fm-control.sh t3nmlivez1 interrupt
+interrupt-delivered t3nmlivez1 harness=claude backend=t3 verified=endpoint cancel=unconfirmed
+exit=0
+--- after 6s: T3 session=stopped
+--- after 6s: busy-state: v1 gen=g1790292812.3180445.23620 seq=7 state=idle source=claude-hook event=session-end ts=1790292897
+--- status tail: done [at=1790292865]: steer handled
+$ fm-control.sh t3nmlivez1 exit
+already-stopped t3nmlivez1 harness=claude backend=t3 endpoint=2acc67a8-98e1-4eff-8d83-6c759c4872cc worktree=/tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj
+exit=0
+--- T3 session=stopped
+$ fm-control.sh t3nmlivez1 exit   (again)
+already-stopped t3nmlivez1 harness=claude backend=t3 endpoint=2acc67a8-98e1-4eff-8d83-6c759c4872cc worktree=/tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj
+exit=0

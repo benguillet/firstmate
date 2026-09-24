@@ -1,0 +1,14 @@
+== proxy mode badauth: the proxy swaps the bearer for one this server never issued; the real server answers ==
+$ FM_T3_ORIGIN=http://127.0.0.1:3798 fm-control.sh t3nmlivez1 interrupt
+error: backend=t3 requires an owner-authenticated T3 Code server; http://127.0.0.1:3798 refused the dispatch capability probe's bearer session: HTTP 401 (invalid_credential)
+exit=1
+--- proxy request log ---
+badauth POST /api/orchestration/dispatch -> 401
+badauth POST /api/orchestration/dispatch -> 401
+
+== unreachable server: FM_T3_ORIGIN=http://127.0.0.1:9 ==
+$ FM_T3_ORIGIN=http://127.0.0.1:9 FM_T3_HTTP_TIMEOUT=3 fm-teardown.sh t3nmlivez1 --force
+error: backend=t3 could not reach http://127.0.0.1:9/api/orchestration/dispatch (connection failed or timed out after 3s)
+exit=1
+after all adversarial runs:
+    meta sha=344b26c932b3 status lines=3 worktree=present thread=2acc67a8-98e1-4eff-8d83-6c759c4872cc session=stopped t3-session-cache=present

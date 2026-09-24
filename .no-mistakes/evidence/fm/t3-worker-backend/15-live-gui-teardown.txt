@@ -1,0 +1,11 @@
+$ fm-teardown.sh t3nmguiz1 --force
+WARNING: watcher still down (same stale episode; last beat: 646s ago, grace 300s) - full banner already printed this episode.
+teardown: reaping leaked worktree process(es) for t3nmguiz1: 3352783
+🌳 Worktree returned to pool.
+teardown t3nmguiz1 complete (window 4a252e39-669d-4b67-a812-fb9e1621842c, worktree /tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj)
+Backlog: t3nmguiz1 just finished (this home keeps no markdown backlog at /tmp/fm-t3-nmtest-01M3AVEE/home/data/backlog.md). Update /tmp/fm-t3-nmtest-01M3AVEE/home/data/backlog.md - move t3nmguiz1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+exit=0
+--- GET thread: {"code":"not_found","reason":"thread_not_found"}
+--- treehouse:
+1     available    ~/.treehouse/proj-763f43/1/proj
+--- firstmate sessions on server: 0

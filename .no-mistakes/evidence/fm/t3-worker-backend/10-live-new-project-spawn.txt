@@ -1,0 +1,9 @@
+--- before: T3 projects: [{"title":"proj","workspaceRoot":"/tmp/fm-t3-nmtest-01M3AVEE/captain"}]
+$ fm-spawn.sh t3nmgonez1 home/projects/proj2 claude --model claude-haiku-4-5 --mode local-only --yolo off --backend t3
+notice: t3nmgonez1 ships mode=local-only while the standing posture for proj2 is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+🌳 Setting up worktree...
+🌳 Leased worktree at ~/.treehouse/proj2-1e09e3/1/proj2. Run 'treehouse return ~/.treehouse/proj2-1e09e3/1/proj2' to release it.
+spawned t3nmgonez1 harness=claude kind=ship mode=local-only yolo=off window=d6be923d-d3c7-414c-b47e-4f70c344df2a worktree=/tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj2-1e09e3/1/proj2
+exit=0
+--- after: T3 projects: [{"id":"bf0a60ad-20c0-4069-a372-1db7aaaa3efe","title":"proj","workspaceRoot":"/tmp/fm-t3-nmtest-01M3AVEE/captain"},{"id":"55aedc88-6320-48e7-9ef8-9f3bd7846838","title":"proj2","workspaceRoot":"/tmp/fm-t3-nmtest-01M3AVEE/home/projects/proj2"}]
+--- meta: worktree=/tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj2-1e09e3/1/proj2 backend=t3 t3_thread_id=d6be923d-d3c7-414c-b47e-4f70c344df2a t3_project_id=55aedc88-6320-48e7-9ef8-9f3bd7846838 

@@ -1,0 +1,22 @@
+== proxy mode v2: POST /api/orchestration/dispatch answers 404 with an empty body; every read still passes through ==
+before:
+    meta sha=344b26c932b3 status lines=3 worktree=present thread=2acc67a8-98e1-4eff-8d83-6c759c4872cc session=stopped t3-session-cache=present
+$ FM_T3_ORIGIN=http://127.0.0.1:3798 fm-control.sh t3nmlivez1 interrupt
+error: backend=t3: the T3 Code server at http://127.0.0.1:3798 does not expose POST /api/orchestration/dispatch, the only write path this backend has; Firstmate's T3 backend is verified against T3 Code v0.0.42 only, and T3's Orchestrator V2 (https://github.com/pingdotgg/t3code/pull/2829) removes that endpoint and renames the thread commands, so run the verified v0.0.42 server or use another backend
+exit=1
+$ FM_T3_ORIGIN=http://127.0.0.1:3798 fm-control.sh t3nmlivez1 exit
+error: backend=t3: the T3 Code server at http://127.0.0.1:3798 does not expose POST /api/orchestration/dispatch, the only write path this backend has; Firstmate's T3 backend is verified against T3 Code v0.0.42 only, and T3's Orchestrator V2 (https://github.com/pingdotgg/t3code/pull/2829) removes that endpoint and renames the thread commands, so run the verified v0.0.42 server or use another backend
+exit=1
+$ FM_T3_ORIGIN=http://127.0.0.1:3798 fm-control.sh t3nmlivez1 relaunch --note v2-probe
+error: backend=t3: the T3 Code server at http://127.0.0.1:3798 does not expose POST /api/orchestration/dispatch, the only write path this backend has; Firstmate's T3 backend is verified against T3 Code v0.0.42 only, and T3's Orchestrator V2 (https://github.com/pingdotgg/t3code/pull/2829) removes that endpoint and renames the thread commands, so run the verified v0.0.42 server or use another backend
+exit=1
+$ FM_T3_ORIGIN=http://127.0.0.1:3798 fm-teardown.sh t3nmlivez1 --force
+error: backend=t3: the T3 Code server at http://127.0.0.1:3798 does not expose POST /api/orchestration/dispatch, the only write path this backend has; Firstmate's T3 backend is verified against T3 Code v0.0.42 only, and T3's Orchestrator V2 (https://github.com/pingdotgg/t3code/pull/2829) removes that endpoint and renames the thread commands, so run the verified v0.0.42 server or use another backend
+exit=1
+after:
+    meta sha=344b26c932b3 status lines=3 worktree=present thread=2acc67a8-98e1-4eff-8d83-6c759c4872cc session=stopped t3-session-cache=present
+--- proxy request log (every request the four commands sent) ---
+v2 POST /api/orchestration/dispatch -> 404 (route removed)
+v2 POST /api/orchestration/dispatch -> 404 (route removed)
+v2 POST /api/orchestration/dispatch -> 404 (route removed)
+v2 POST /api/orchestration/dispatch -> 404 (route removed)

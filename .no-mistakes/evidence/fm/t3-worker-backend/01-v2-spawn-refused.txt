@@ -1,0 +1,32 @@
+$ FM_T3_ORIGIN=http://127.0.0.1:3798 (proxy: POST /api/orchestration/dispatch -> 404 empty body, as on Orchestrator V2)
+$ fm-spawn.sh t3nmv2z1 projects/proj claude --model claude-haiku-4-5 --mode local-only --yolo off --backend t3
+error: backend=t3: the T3 Code server at http://127.0.0.1:3798 does not expose POST /api/orchestration/dispatch, the only write path this backend has; Firstmate's T3 backend is verified against T3 Code v0.0.42 only, and T3's Orchestrator V2 (https://github.com/pingdotgg/t3code/pull/2829) removes that endpoint and renames the thread commands, so run the verified v0.0.42 server or use another backend
+exit=1
+--- proxy request log ---
+v2 POST /api/orchestration/dispatch -> 404 (route removed)
+--- after the refusal ---
+state/t3nmv2z1.meta: ls: cannot access '/tmp/fm-t3-nmtest-01M3AVEE/home/state/t3nmv2z1.meta': No such file or directory
+treehouse pool: ls: cannot access '/tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse': No such file or directory
+t3 project list:
+DESCRIPTION
+  Manage projects.
+
+USAGE
+  t3 project <subcommand> [flags]
+
+GLOBAL FLAGS
+  --help, -h                                                          Show help information
+  --version, -v                                                       Show version information
+  --wizard                                                            Start wizard mode for a command
+  --completions <bash|zsh|fish|sh>                                    Print shell completion script (choices: bash, zsh, fish, sh)
+  --log-level <all|trace|debug|info|warn|warning|error|fatal|none>    Sets the minimum log level (choices: all, trace, debug, info, warn, warning, error, fatal, none)
+
+SUBCOMMANDS
+  add       Add a project.
+  remove    Remove a project.
+  rename    Rename a project.
+
+ERROR
+  Unknown subcommand "list" for "t3 project"
+--- T3 shell after the refused spawn (observer read) ---
+{"projects":[{"id":"bf0a60ad-20c0-4069-a372-1db7aaaa3efe","title":"proj","workspaceRoot":"/tmp/fm-t3-nmtest-01M3AVEE/captain"}],"threads":[]}

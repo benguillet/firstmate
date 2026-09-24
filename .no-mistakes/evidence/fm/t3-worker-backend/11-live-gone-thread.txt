@@ -1,0 +1,33 @@
+--- worker status: done [at=1790293221]: running in /tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj2-1e09e3/1/proj2
+--- thread: {"projectId":"55aedc88-6320-48e7-9ef8-9f3bd7846838","worktreePath":"/tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj2-1e09e3/1/proj2","session":"ready"}
+== out of band: archive the thread directly on the T3 server (what archiving it in the T3 GUI does) ==
+thread.archive -> HTTP 200
+--- GET thread now: {"code":"not_found","reason":"thread_not_found"}
+$ fm-control.sh t3nmgonez1 exit
+endpoint-gone t3nmgonez1 harness=claude backend=t3 endpoint=d6be923d-d3c7-414c-b47e-4f70c344df2a worktree=/tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj2-1e09e3/1/proj2
+exit=0
+$ fm-control.sh t3nmgonez1 interrupt
+error: no agent is running at task t3nmgonez1's recorded endpoint (state: missing); there is nothing to interrupt
+exit=1
+$ fm-control.sh t3nmgonez1 relaunch --note gone-thread-check
+error: task t3nmgonez1's T3 thread d6be923d-d3c7-414c-b47e-4f70c344df2a is archived or deleted; a relaunch cannot re-create a thread, so tear the task down and spawn it again
+error: the replacement agent for t3nmgonez1 could not be launched on claude
+error: t3nmgonez1's agent was stopped but the replacement did not launch; no agent is running, and its work plus the recorded progress note are preserved at /tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj2-1e09e3/1/proj2
+exit=1
+$ fm-peek.sh t3nmgonez1 20
+WARNING: watcher still down (same stale episode; last beat: 476s ago, grace 300s) - full banner already printed this episode.
+exit=1
+$ fm-crew-state.sh t3nmgonez1
+state: unknown · source: none · backend target gone: d6be923d-d3c7-414c-b47e-4f70c344df2a
+exit=0
+--- record kept: spawn_gen=s1790293198.3286915.7155 t3_thread_id=d6be923d-d3c7-414c-b47e-4f70c344df2a  worktree=present
+$ fm-teardown.sh t3nmgonez1 --force
+WARNING: watcher still down (same stale episode; last beat: 476s ago, grace 300s) - full banner already printed this episode.
+teardown: reaping leaked worktree process(es) for t3nmgonez1: 3288727
+🌳 Worktree returned to pool.
+teardown t3nmgonez1 complete (window d6be923d-d3c7-414c-b47e-4f70c344df2a, worktree /tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj2-1e09e3/1/proj2)
+Backlog: t3nmgonez1 just finished (this home keeps no markdown backlog at /tmp/fm-t3-nmtest-01M3AVEE/home/data/backlog.md). Update /tmp/fm-t3-nmtest-01M3AVEE/home/data/backlog.md - move t3nmgonez1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+exit=0
+--- after: meta=No such file or directory firstmate sessions=0
+--- after: treehouse:
+1     available    ~/.treehouse/proj2-1e09e3/1/proj2

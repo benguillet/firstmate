@@ -1,0 +1,5 @@
+--- cwd of every Claude session T3 launched during the live run (from the provider transcripts) ---
+6dedfdcf-a0b9-4957-a1ff-d9d61248118e.jsonl: "cwd":"/tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj" 
+a5de5440-3d9b-470e-a4ae-c60285790e28.jsonl: "cwd":"/tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj" 
+a06ad872-343e-4c3b-b617-13059759d21e.jsonl: "cwd":"/tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj2-1e09e3/1/proj2" 
+(the project-clone paths only got an empty Claude auto-memory folder; no session ran there)

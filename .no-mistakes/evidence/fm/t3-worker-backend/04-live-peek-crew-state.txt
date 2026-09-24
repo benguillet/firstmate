@@ -1,0 +1,48 @@
+--- state/t3nmlivez1.busy-state ---
+v1 gen=g1790292812.3180445.23620 seq=3 state=idle source=claude-hook event=stop ts=1790292830
+
+$ fm-peek.sh t3nmlivez1 40
+   `blocked [at=<epoch>]: {what you need}` and stop; firstmate arranges it.
+
+# Firstmate instruction inbox
+Firstmate steers you through durable message files in '/tmp/fm-t3-nmtest-01M3AVEE/home/state/t3nmlivez1.inbox'.
+When a terminal message says an instruction is waiting there - and at any natural checkpoint when you are unsure - list '/tmp/fm-t3-nmtest-01M3AVEE/home/state/t3nmlivez1.inbox'/*.msg, read and act on each message in numeric order, then acknowledge each handled message by moving it: `mv '/tmp/fm-t3-nmtest-01M3AVEE/home/state/t3nmlivez1.inbox'/NNN.msg '/tmp/fm-t3-nmtest-01M3AVEE/home/state/t3nmlivez1.inbox'/handled/`.
+The move IS the acknowledgement: without it firstmate rings again and eventually treats you as stuck. An empty or absent inbox needs no action.
+
+# Project memory
+If `AGENTS.md` or `CLAUDE.md` already exists, or if this task produced durable project-intrinsic knowledge, run `/home/ubuntu/.no-mistakes/worktrees/945fa0d82f20/01M3AVEEQGVFADCG755EDS0SRA/bin/fm-ensure-agents-md.sh .` in the worktree.
+Record only project knowledge useful to almost every future session.
+For anything the codebase already shows, prefer a pointer to the authoritative file, command, or doc over copying the detail.
+If you touch a project `AGENTS.md`, follow `/home/ubuntu/.no-mistakes/worktrees/945fa0d82f20/01M3AVEEQGVFADCG755EDS0SRA/bin/fm-ensure-agents-md.sh`'s self-governance contract in the same pass.
+Keep it proportionate: skip `AGENTS.md` edits for trivial tasks that produced no durable project knowledge.
+
+# Definition of done
+Delivery contract: mode=local-only
+Ship branch: fm/t3nmlivez1
+This task ships **local-only**: no remote, no PR, no pipeline.
+The task is complete only when committed on your branch `fm/t3nmlivez1`. Do NOT push, do NOT open a PR, do NOT merge.
+A `done:` is accepted when the named head is on this project's shared local branch, not only on a detached copy; the check tests that head, not merely that a branch moved.
+Keep your branch a clean fast-forward onto the current default branch - if `main` has advanced, rebase onto it so the eventual merge stays a fast-forward.
+When it is implemented and committed, append `done [at=<epoch>]: ready in branch fm/t3nmlivez1` to the status file and stop.
+The configured merge authority approves the ready branch, then firstmate merges it into local `main` through the guarded fast-forward path.
+assistant: I'll start by verifying isolation, then complete the task.
+[tool] Command run started
+[tool] Command run
+[tool] Command run
+assistant: Isolation verified. Now creating branch and committing the worker path.
+[tool] Command run started
+[tool] Command run
+[tool] Tool call started
+[tool] Tool call
+[tool] Tool call
+[tool] Command run started
+[tool] Command run
+[tool] Tool call started
+[tool] Tool call
+[tool] Tool call
+assistant: Task complete. WORKER.txt recorded at `/tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj`, committed on branch fm/t3nmlivez1, done status reported.
+[t3 thread=2acc67a8-98e1-4eff-8d83-6c759c4872cc session=ready turn=completed]
+exit=0
+$ fm-crew-state.sh t3nmlivez1
+state: done · source: status-log · ready in branch fm/t3nmlivez1 /tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj
+exit=0

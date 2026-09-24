@@ -1,0 +1,48 @@
+ok - fm_backend_t3_origin: reads the running server's origin and refuses loudly without one
+ok - fm_backend_t3 session: minted once, cached 0600 and never logged, re-minted on 401, revoked on release
+ok - fm_backend_t3_project_ensure: reuses the project owning the root and registers one only when none exists
+ok - fm_backend_t3_project_find: the project rooted at the clone wins
+ok - fm_backend_t3_project_find: otherwise the repository's project, by T3's normalized origin, announced on stderr
+ok - fm_backend_t3_project_find: several matches resolve to the oldest project titled after the repository
+ok - fm_backend_t3_project_ensure: registers a project only when T3 has none for the repository
+ok - fm_backend_t3_project_find: matches the candidate's origin, never T3's upstream-derived identity
+ok - fm_backend_t3_model_selection: explicit, then project default, then manifest default; claude only
+ok - fm_backend_t3_thread_create: mints the id, binds the worktree, proves it by re-read, fails closed on a refused dispatch
+ok - fm_backend_t3_runtime_mode: config/claude-permission-mode maps onto T3's runtime modes
+ok - fm_backend_t3 state reads: session status maps onto busy, agent, and composer verdicts; 404 is gone, an unreachable server is unreadable
+ok - fm_backend_t3_capture: renders the transcript tail in time order with a live-state footer and fails on a gone thread
+ok - fm_backend_t3_send_text_submit: a 2xx turn.start is delivery, a busy thread queues, a gone thread is not retried, an unread or not yet visible landing is pending
+ok - fm_backend_t3_send_key: Escape and C-c interrupt the turn, Enter is a no-op, other keys refuse
+ok - fm_backend_t3_kill: stop, then archive, then a 404 re-read; unproven closes refuse
+ok - fm-backend.sh: busy, agent, composer, existence, send, and tool requirements dispatch to the T3 adapter
+ok - fm-spawn.sh --backend t3: leases the worktree, binds the thread to it, delivers the brief as the first turn, wires hooks and environment through settings
+ok - fm-peek.sh: reads a T3 task's transcript tail with its live state
+ok - fm-control.sh: interrupt and exit drive T3's interrupt and session stop with proven postconditions
+ok - fm-teardown.sh: a T3 close that cannot be proven refuses before the lease is returned, even under --force
+ok - fm-teardown.sh: closes a T3 task by stop, archive, and re-read, returns the lease, and revokes the home's session
+ok - fm-spawn.sh --backend t3: a non-claude harness is refused before any lease or thread exists
+ok - fm-spawn.sh --backend t3: a declared Claude account pin is refused before any lease or thread exists
+ok - fm-spawn.sh --backend t3 --secondmate: refused before any mutation
+ok - fm-spawn.sh --backend t3: a thread that never starts is archived, its lease returned, and no record left
+ok - fm-spawn.sh --backend t3: a refused brief turn archives the thread, returns the lease, and leaves no record
+ok - fm-spawn.sh --backend t3: a failed launch whose thread close is unproven keeps the lease and says so
+ok - fm-spawn.sh --backend t3: a failed launch bounds its Treehouse lock wait and leaves the lease when it is held
+ok - fm-spawn.sh --backend t3: an abort before the record returns a clean leased slot
+ok - fm-spawn.sh --backend t3: an abort never force-returns a leased slot holding uncommitted work
+ok - fm-spawn.sh --backend t3: an accepted thread whose read-back failed is archived by its minted id
+ok - fm-spawn.sh --backend t3: an abort whose thread close is unproven keeps the lease and the claim and says so
+ok - fm-spawn.sh --relaunch on t3: the brief turn carries the relaunch's model, and the thread takes the changed posture
+ok - fm-spawn.sh --relaunch on t3: a non-claude harness is refused before the record changes
+ok - fm-spawn.sh --relaunch on t3: a relaunch that never starts stops the session but keeps the thread and worktree
+ok - fm-spawn.sh --relaunch on t3: a posture T3 does not apply refuses the relaunch before the brief turn
+ok - fm_backend_t3_dispatch_check: a server exposing POST /api/orchestration/dispatch passes without dispatching a command
+ok - fm_backend_t3_dispatch_check: a server without the dispatch endpoint is refused, naming the verified version and the V2 removal
+ok - fm_backend_t3_send_text_submit: a server without the dispatch endpoint reports send-failed and names the removed endpoint
+ok - fm_backend_t3_dispatch: a 404 naming a resource reports its reason and never the removed endpoint
+ok - fm_backend_t3_dispatch_check: a 5xx or a rejected session is refused as a server or auth failure with the server's reason
+ok - fm-spawn.sh --backend t3: a server without the dispatch endpoint is refused before any lease or thread exists
+ok - fm-control.sh: a T3 task whose server lost the dispatch endpoint is refused before its thread is read
+ok - fm-spawn.sh --relaunch on t3: a server without the dispatch endpoint is refused before the record changes
+ok - fm-teardown.sh on t3: a server without the dispatch endpoint is refused before any destructive step, even under --force
+bash tests/fm-backend-t3.test.sh  11.16s user 19.92s system 76% cpu 40.567 total
+rc=0

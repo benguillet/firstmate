@@ -1,0 +1,56 @@
+--- T3 thread detail (observer GET /api/orchestration/threads/<id>) ---
+{
+  "id": "2acc67a8-98e1-4eff-8d83-6c759c4872cc",
+  "title": "fm-t3nmlivez1",
+  "projectId": "bf0a60ad-20c0-4069-a372-1db7aaaa3efe",
+  "worktreePath": "/tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj",
+  "branch": null,
+  "runtimeMode": "full-access",
+  "modelSelection": {
+    "instanceId": "claudeAgent",
+    "model": "claude-haiku-4-5"
+  },
+  "session": {
+    "status": "ready",
+    "providerName": "claudeAgent"
+  },
+  "messages": 4
+}
+--- T3 shell: the thread is listed under the captain project ---
+{"projects":[{"id":"bf0a60ad-20c0-4069-a372-1db7aaaa3efe","title":"proj","workspaceRoot":"/tmp/fm-t3-nmtest-01M3AVEE/captain"}],"threads":[{"id":"2acc67a8-98e1-4eff-8d83-6c759c4872cc","title":"fm-t3nmlivez1","projectId":"bf0a60ad-20c0-4069-a372-1db7aaaa3efe"}]}
+--- state/t3nmlivez1.status (appended by the worker) ---
+done [at=1790292827]: ready in branch fm/t3nmlivez1 /tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj
+--- the worker commit, read from the leased worktree ---
+11c7509 Record worker path
+f023c5f readme
+WORKER.txt: /tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj
+project clone branch untouched: main status=[]
+captain checkout untouched: master status=[]
+--- worktree .claude/settings.local.json (keys) ---
+{
+  "env": [
+    "CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION",
+    "CLAUDE_CODE_SEND_FEEDBACK",
+    "COMPACT_ADVISER_DISABLE",
+    "FM_TASK_ID",
+    "GOTMPDIR"
+  ],
+  "hooks": [
+    "SessionEnd",
+    "Stop",
+    "StopFailure",
+    "UserPromptSubmit"
+  ],
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
+  "feedbackDrafts": "off"
+}
+--- busy record ---
+t3nmlivez1.busy-gen
+t3nmlivez1.busy-state
+t3nmlivez1.meta
+t3nmlivez1.status
+t3nmlivez1.turn-ended

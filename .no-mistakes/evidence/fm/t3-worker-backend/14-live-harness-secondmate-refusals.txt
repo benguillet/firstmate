@@ -1,0 +1,11 @@
+$ fm-spawn.sh t3nmcodexz1 home/projects/proj codex --mode local-only --yolo off --backend t3
+notice: T3 has no project rooted at /tmp/fm-t3-nmtest-01M3AVEE/home/projects/proj; using project 'proj' at /tmp/fm-t3-nmtest-01M3AVEE/captain, the T3 project for the same repository (/tmp/fm-t3-nmtest-01m3avee/origin)
+error: backend=t3 supports the claude harness family only (got 'codex'); T3 owns the provider command line, and only claude's settings-file wiring is verified to load through it
+exit=1
+$ fm-spawn.sh t3nmsmz1 --backend t3 --secondmate
+error: backend=t3 does not support --secondmate spawns; a secondmate is a firstmate primary whose supervision protocol has no T3 shape yet
+exit=1
+--- T3 threads before=1 after=1; records: 0 ; treehouse leases in use: 2
+--- treehouse status (the only lease is the live GUI task; the refused spawns leased nothing) ---
+1     leased       ~/.treehouse/proj-763f43/1/proj  (held by fm-t3nmguiz1)
+                   claude (3352783)

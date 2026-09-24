@@ -1,0 +1,22 @@
+--- before: firstmate sessions on the server:
+  client: firstmate:/tmp/fm-t3-nmtest-01M3AVEE/home | bot
+$ fm-teardown.sh t3nmlivez1 --force
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: 425s ago, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌳 Worktree returned to pool.
+teardown t3nmlivez1 complete (window 2acc67a8-98e1-4eff-8d83-6c759c4872cc, worktree /tmp/fm-t3-nmtest-01M3AVEE/user-home/.treehouse/proj-763f43/1/proj)
+Backlog: t3nmlivez1 just finished (this home keeps no markdown backlog at /tmp/fm-t3-nmtest-01M3AVEE/home/data/backlog.md). Update /tmp/fm-t3-nmtest-01M3AVEE/home/data/backlog.md - move t3nmlivez1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+exit=0
+--- after: GET thread -> {"code":"not_found","reason":"thread_not_found"}
+--- after: shell threads -> []
+--- after: state/t3nmlivez1.meta -> ls: cannot access '$LIVE/home/state/t3nmlivez1.meta': No such file or directory
+--- after: .t3-session files -> 0 present
+--- after: firstmate sessions on the server:
+0
+--- after: treehouse status:
+1     available    ~/.treehouse/proj-763f43/1/proj
