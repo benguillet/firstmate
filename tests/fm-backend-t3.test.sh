@@ -152,7 +152,7 @@ t3_case() {
   FB=$(make_t3_fakebin "$CASE_DIR")
   : > "$FAKE/dispatch.log"
   rm -f "$FAKE/fail-thread-create" "$FAKE/fail-turn-start" "$FAKE/fail-session-stop" "$FAKE/fail-archive" \
-    "$FAKE/fail-runtime-mode-set" \
+    "$FAKE/fail-runtime-mode-set" "$FAKE/fail-thread-read" "$FAKE/fail-thread-read-once" \
     "$FAKE/on-turn-status" "$FAKE/on-interrupt-status"
 }
 
@@ -978,6 +978,50 @@ test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start() {
     || fail "the aborted task must not keep its claim on a dirty slot it never recorded"
   assert_absent "$HOME_DIR/state/$id.meta" "an aborted spawn should leave no record"
   pass "fm-spawn.sh --backend t3: an abort never force-returns a leased slot holding uncommitted work"
+
+  # A thread.create T3 accepted but whose read-back failed is still closed by
+  # the minted id once the thread reads again, and only then is the lease returned.
+  id=t3readoncez1
+  fm_test_spawn_brief "$HOME_DIR" "$id"
+  : > "$FAKE/fail-thread-read-once"
+  : > "$FAKE/dispatch.log"
+  : > "$T3LOG"
+  out=$(t3_env FM_SPAWN_NO_GUARD=1 "$ROOT/bin/fm-spawn.sh" "$id" "$proj" claude --mode no-mistakes --yolo off --backend t3 2>&1)
+  status=$?
+  rm -f "$FAKE/fail-thread-read-once"
+  [ "$status" -ne 0 ] || fail "a spawn whose thread read-back fails must fail"$'\n'"$out"
+  assert_contains "$out" "could not be read back" "the failure should name the failed read-back"
+  tid=$(dispatch_last thread.create .threadId)
+  [ "$(dispatch_types)" = "thread.create thread.archive" ] \
+    || fail "the minted thread should be archived once it reads again, got '$(dispatch_types)'"
+  [ "$(dispatch_last thread.archive .threadId)" = "$tid" ] || fail "the archive should name the minted thread"
+  assert_contains "$(cat "$T3LOG")" $'treehouse\x1f''return'$'\x1f''--force' "a proven close on a clean slot should return the lease"
+  assert_absent "$HOME_DIR/state/$id.meta" "an aborted spawn should leave no record"
+  pass "fm-spawn.sh --backend t3: an accepted thread whose read-back failed is archived by its minted id"
+
+  # While the thread stays unreadable its close is unproven: the lease stays.
+  id=t3readfailz1
+  fm_test_spawn_brief "$HOME_DIR" "$id"
+  : > "$FAKE/fail-thread-read"
+  : > "$FAKE/dispatch.log"
+  : > "$FAKE/http.log"
+  : > "$T3LOG"
+  out=$(t3_env FM_SPAWN_NO_GUARD=1 "$ROOT/bin/fm-spawn.sh" "$id" "$proj" claude --mode no-mistakes --yolo off --backend t3 2>&1)
+  status=$?
+  rm -f "$FAKE/fail-thread-read"
+  [ "$status" -ne 0 ] || fail "a spawn whose thread read-back fails must fail"$'\n'"$out"
+  tid=$(dispatch_last thread.create .threadId)
+  wt=$(dispatch_last thread.create .worktreePath)
+  [ "$(dispatch_types)" = "thread.create" ] || fail "an unreadable thread cannot be archived, got '$(dispatch_types)'"
+  [ "$(grep -c "GET /api/orchestration/threads/$tid" "$FAKE/http.log")" -ge 2 ] \
+    || fail "the abort should attempt to close the minted thread after the failed read-back"
+  [ "$(thread_field "$tid" .archivedAt)" = null ] || fail "the unreadable thread should still be unarchived"
+  assert_contains "$out" "T3 thread $tid could not be proven closed" "the warning should name the unclosed thread"
+  assert_contains "$out" "worktree $wt and slot claim in place" "the warning should name the kept worktree"
+  assert_not_contains "$(cat "$T3LOG")" $'treehouse\x1f''return' "an unproven close must not return the lease"
+  [ -d "$wt" ] || fail "an unproven close must keep the leased worktree"
+  assert_absent "$HOME_DIR/state/$id.meta" "an aborted spawn should leave no record"
+  pass "fm-spawn.sh --backend t3: an abort whose thread close is unproven keeps the lease and says so"
 }
 
 test_spawn_t3_relaunch_carries_model_and_keeps_thread_on_failure() {

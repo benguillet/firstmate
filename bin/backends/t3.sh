@@ -620,7 +620,9 @@ fm_backend_t3_runtime_mode() {  # <claude-perm-flag>
 }
 
 # fm_backend_t3_thread_create: create the task thread bound to <worktree> and
-# prove the binding by reading it back. Prints the thread id.
+# prove the binding by reading it back. Prints the thread id - on a failure too,
+# once the id is minted, because T3 may hold the thread anyway and the caller
+# owns closing it (a thread T3 never created reads not-found, a proven close).
 fm_backend_t3_thread_create() {  # <project-id> <title> <worktree> <branch-or-empty> <model-selection-json> <runtime-mode>
   local project=$1 title=$2 worktree=$3 branch=${4-} model=$5 mode=$6 thread cmd body bound
   thread=$(fm_backend_t3_uuid) || return 1
@@ -630,15 +632,19 @@ fm_backend_t3_thread_create() {  # <project-id> <title> <worktree> <branch-or-em
     '{type:"thread.create",commandId:$cid,threadId:$tid,projectId:$pid,title:$title,
       modelSelection:$model,runtimeMode:$mode,interactionMode:"default",
       branch:(if $branch == "" then null else $branch end),worktreePath:$wt,createdAt:$now}') || return 1
-  fm_backend_t3_dispatch "$cmd" >/dev/null || return 1
+  fm_backend_t3_dispatch "$cmd" >/dev/null || {
+    printf '%s' "$thread"
+    return 1
+  }
   body=$(fm_backend_t3_thread_json "$thread") || {
     echo "error: t3 thread.create was accepted but thread $thread could not be read back" >&2
+    printf '%s' "$thread"
     return 1
   }
   bound=$(printf '%s' "$body" | jq -r '.thread.worktreePath // empty')
   [ "$bound" = "$worktree" ] || {
     echo "error: t3 thread $thread records worktreePath '${bound:-none}', not the task worktree '$worktree'; refusing to launch a worker outside its isolated copy" >&2
-    fm_backend_t3_kill "$thread" >/dev/null 2>&1 || true
+    printf '%s' "$thread"
     return 1
   }
   printf '%s' "$thread"

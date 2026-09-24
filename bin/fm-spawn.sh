@@ -1226,7 +1226,7 @@ t3_leased_slot_clean() {
 }
 
 spawn_abort_cleanup() {
-  local status=$?
+  local status=$? t3_unclosed=
   if [ "$RELAUNCH_REPLACEMENT_PENDING" = 1 ] &&
     [ "$SPAWN_META_PUBLISH_STARTED" = 1 ] &&
     [ -n "$SPAWN_META_TMP" ] &&
@@ -1312,19 +1312,28 @@ spawn_abort_cleanup() {
   # A T3 spawn leases its Treehouse slot itself before the thread exists
   # (there is no pane to type `treehouse get` into), so an abort before the
   # record is published archives the thread it created and returns the lease -
-  # only when the slot reads clean, under the Treehouse project lock such an
-  # abort still holds. A dirty or unreadable slot keeps its lease, with a
-  # warning, and only this task's own claim on it is released below, so the
+  # only once that close is proven and the slot reads clean, under the
+  # Treehouse project lock such an abort still holds. An unproven close keeps
+  # the lease and the claim, with a warning. A dirty or unreadable slot keeps
+  # its lease, with a warning, and only this task's own claim on it is released
+  # below, so the
   # slot's previous owner keeps its unlanded-work protection at teardown. Once
   # the record exists, teardown owns both, exactly as for every other backend.
   if [ "$T3_ABORT_CLEANUP" = 1 ]; then
     T3_ABORT_CLEANUP=0
     if [ -n "${T3_THREAD_ID:-}" ]; then
-      fm_backend_kill t3 "$T3_THREAD_ID" 2>/dev/null && SPAWN_ENDPOINT_CLOSED=1 || true
+      if fm_backend_kill t3 "$T3_THREAD_ID" 2>/dev/null; then
+        SPAWN_ENDPOINT_CLOSED=1
+      else
+        t3_unclosed=$T3_THREAD_ID
+      fi
     fi
     if [ -n "${T3_LEASED_WT:-}" ] && [ -n "${PROJ_ABS:-}" ] &&
       [ ! -e "$STATE/$ID.meta" ] && [ ! -L "$STATE/$ID.meta" ]; then
-      if t3_leased_slot_clean; then
+      if [ -n "$t3_unclosed" ]; then
+        echo "warning: T3 thread $t3_unclosed could not be proven closed after the aborted spawn of $ID; leaving its leased Treehouse worktree $T3_LEASED_WT and slot claim in place" >&2
+        SPAWN_SLOT_CLAIMED=0
+      elif t3_leased_slot_clean; then
         (cd "$PROJ_ABS" && treehouse return --force "$T3_LEASED_WT") >/dev/null 2>&1 ||
           echo "warning: could not return the leased Treehouse worktree $T3_LEASED_WT after the aborted spawn of $ID" >&2
       else

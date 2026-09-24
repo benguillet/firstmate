@@ -22,6 +22,9 @@ mutate it with jq between calls:
   on-interrupt-status  session status thread.turn.interrupt sets (default
                   stopped, the v0.0.42 behavior: T3 stops the provider)
   fail-thread-create   presence makes thread.create answer 500
+  fail-thread-read     presence makes every thread detail read answer 500
+  fail-thread-read-once  presence makes the next thread detail read answer
+                       500, then removes itself
   fail-turn-start      presence makes thread.turn.start answer 500
   fail-session-stop    presence makes thread.session.stop answer 200 but
                        change nothing (the ignored stop observed after archive)
@@ -150,6 +153,13 @@ class Handler(BaseHTTPRequestHandler):
             return
         prefix = "/api/orchestration/threads/"
         if parts.path.startswith(prefix):
+            if flag("fail-thread-read-once"):
+                os.remove(path("fail-thread-read-once"))
+                self._error(500, "EnvironmentInternalError", "orchestration_read_failed", "internal_error")
+                return
+            if flag("fail-thread-read"):
+                self._error(500, "EnvironmentInternalError", "orchestration_read_failed", "internal_error")
+                return
             thread_id = parts.path[len(prefix):]
             thread = data["threads"].get(thread_id)
             if thread is None or not thread_visible(thread):
