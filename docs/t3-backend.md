@@ -73,6 +73,10 @@ T3 then stops the provider session itself a moment later and starts it again on 
 `fm-control.sh <id> exit` sends T3's session stop and requires T3 to report no live provider before it claims the stop; an already-stopped session is idempotent success, and a thread T3 no longer knows reports `endpoint-gone`.
 `fm-control.sh <id> relaunch` stops the agent and delivers the brief again as a new turn on the same thread.
 T3 resumes the provider's own conversation, so unlike a terminal relaunch the replacement keeps the previous context; a thread that has been archived or deleted cannot be re-created and refuses instead.
+A relaunch onto a non-`claude` harness refuses before the running agent is stopped.
+`--model` and `--effort` on a relaunch ride that brief turn as its model selection, so the replacement runs on the model the record names.
+A relaunch whose brief turn never starts stops the session again but keeps the thread, the record, and the worktree, so the task can be relaunched once the cause is fixed.
+A fresh spawn that fails after creating its thread archives the thread and returns the leased worktree.
 
 Cleanup keeps every shared Firstmate safety check: a scout still requires its report and completed decision inventory, and a ship still refuses dirty or unlanded work.
 It then stops the provider session when one is live, waits for T3 to report it stopped, archives the thread, and re-reads it: only T3's own not-found proves the close.

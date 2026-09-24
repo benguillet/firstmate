@@ -463,19 +463,26 @@ fm_backend_t3_real_path() {  # <path>
   (CDPATH='' cd -- "$1" 2>/dev/null && pwd -P) || printf '%s' "$1"
 }
 
-# fm_backend_t3_project_ensure: the id of the T3 project whose workspaceRoot is
-# <project-path> (compared physically), created through project.create when no
-# project has it. Prints the id.
-fm_backend_t3_project_ensure() {  # <project-path>
-  local project=$1 real shell id title cmd
+# fm_backend_t3_project_find: the id of the T3 project whose workspaceRoot is
+# <project-path> (compared physically); prints nothing when no project has it.
+fm_backend_t3_project_find() {  # <project-path>
+  local project=$1 real shell
   real=$(fm_backend_t3_real_path "$project")
   shell=$(fm_backend_t3_shell) || return 1
-  id=$(printf '%s' "$shell" | jq -r --arg root "$real" --arg raw "$project" \
-    '[.projects[] | select(.workspaceRoot == $root or .workspaceRoot == $raw)] | .[0].id // empty') || id=
+  printf '%s' "$shell" | jq -r --arg root "$real" --arg raw "$project" \
+    '[.projects[] | select(.workspaceRoot == $root or .workspaceRoot == $raw)] | .[0].id // empty' || :
+}
+
+# fm_backend_t3_project_ensure: the project fm_backend_t3_project_find names,
+# registered through project.create when no project has the root. Prints the id.
+fm_backend_t3_project_ensure() {  # <project-path>
+  local project=$1 real shell id title cmd
+  id=$(fm_backend_t3_project_find "$project") || return 1
   if [ -n "$id" ]; then
     printf '%s' "$id"
     return 0
   fi
+  real=$(fm_backend_t3_real_path "$project")
   id=$(fm_backend_t3_uuid) || return 1
   title=${real##*/}
   [ -n "$title" ] || title=$real
@@ -500,16 +507,21 @@ fm_backend_t3_project_default_model() {  # <project-id> -> modelSelection JSON o
   printf '%s' "$sel"
 }
 
+fm_backend_t3_harness_check() {  # <harness>
+  case "$1" in
+    claude*) return 0 ;;
+  esac
+  echo "error: backend=t3 supports the claude harness family only (got '$1'); T3 owns the provider command line, and only claude's settings-file wiring is verified to load through it" >&2
+  return 1
+}
+
 # fm_backend_t3_model_selection: the thread.create modelSelection for a claude
 # task. Precedence: explicit --model, then the T3 project's own default when it
 # names claudeAgent, then T3's cached model manifest default for claudeAgent
 # (userdata/model-manifest.json). Effort rides options [{id:"effort",value}].
-fm_backend_t3_model_selection() {  # <harness> <model> <effort> <project-id>
-  local harness=$1 model=${2-} effort=${3-} project=${4-} manifest sel instance
-  case "$harness" in
-    claude*) instance=claudeAgent ;;
-    *) echo "error: backend=t3 supports the claude harness family only (got '$harness'); T3 owns the provider command line, and only claude's settings-file wiring is verified to load through it" >&2; return 1 ;;
-  esac
+fm_backend_t3_model_selection() {  # <harness> <model> <effort> <project-id-or-empty>
+  local harness=$1 model=${2-} effort=${3-} project=${4-} manifest sel instance=claudeAgent
+  fm_backend_t3_harness_check "$harness" || return 1
   if [ -z "$model" ] && [ -n "$project" ]; then
     if sel=$(fm_backend_t3_project_default_model "$project"); then
       if [ "$(printf '%s' "$sel" | jq -r '.instanceId // .provider // empty')" = "$instance" ]; then
@@ -571,15 +583,17 @@ fm_backend_t3_thread_create() {  # <project-id> <title> <worktree> <branch-or-em
 # fm_backend_t3_turn_start: send one user message. Prints the message id it
 # minted so a caller can prove the message landed (fm_backend_t3_message_landed):
 # the server answers 200 for a turn on an ARCHIVED thread too and simply drops
-# it (observed live), so acceptance alone is not delivery.
-fm_backend_t3_turn_start() {  # <thread-id> <text>
+# it (observed live), so acceptance alone is not delivery. A non-empty
+# <model-selection-json> switches the thread's model for this turn onward.
+fm_backend_t3_turn_start() {  # <thread-id> <text> [model-selection-json]
   local cmd mid
   mid=$(fm_backend_t3_uuid) || return 1
   cmd=$(jq -cn --arg cid "$(fm_backend_t3_uuid)" --arg tid "$1" --arg mid "$mid" \
-    --arg text "$2" --arg now "$(fm_backend_t3_now)" \
+    --arg text "$2" --arg model "${3-}" --arg now "$(fm_backend_t3_now)" \
     '{type:"thread.turn.start",commandId:$cid,threadId:$tid,
       message:{messageId:$mid,role:"user",text:$text,attachments:[]},
-      runtimeMode:"full-access",interactionMode:"default",createdAt:$now}') || return 1
+      runtimeMode:"full-access",interactionMode:"default",createdAt:$now}
+     + (if $model == "" then {} else {modelSelection:($model | fromjson)} end)') || return 1
   fm_backend_t3_dispatch "$cmd" >/dev/null || return $?
   printf '%s' "$mid"
 }

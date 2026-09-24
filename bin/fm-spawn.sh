@@ -1156,6 +1156,7 @@ ORCA_TERMINAL=
 T3_ABORT_CLEANUP=0
 T3_THREAD_ID=
 T3_PROJECT_ID=
+T3_MODEL_SELECTION=
 T3_LEASED_WT=
 HERDR_PROJECTION_ABORT_CLEANUP=0
 HERDR_PROJECTION_ABORT_SESSION=
@@ -2886,6 +2887,17 @@ else
   WT=""
   BRIEF="$DATA/$ID/brief.md"
 fi
+# The thread's model is resolved (and the claude-only harness rule enforced)
+# while nothing is registered, leased, or recorded; the project is only read
+# here, so a root T3 does not know yet has no project default to offer.
+if [ "$BACKEND" = t3 ]; then
+  if [ "$RELAUNCH" -eq 1 ]; then
+    T3_PROJECT_ID=$(fm_meta_get "$RELAUNCH_META" t3_project_id)
+  else
+    T3_PROJECT_ID=$(fm_backend_t3_project_find "$PROJ_ABS") || exit 1
+  fi
+  T3_MODEL_SELECTION=$(fm_backend_t3_model_selection "$HARNESS" "$MODEL" "$EFFORT" "$T3_PROJECT_ID") || exit 1
+fi
 if [ "$RELAUNCH" -eq 0 ] && [ "$KIND" != secondmate ] && [ "$BACKEND" != orca ]; then
   SPAWN_TREEHOUSE_PROJECT_LOCK=$(fm_treehouse_project_lock_path "$PROJ_ABS") || {
     echo "error: could not resolve the shared Treehouse project lock for $PROJ_ABS" >&2
@@ -3402,10 +3414,7 @@ if [ "$RELAUNCH" -eq 1 ]; then
     T=$RELAUNCH_TARGET
     WT_TARGET=$T
     SES=${T%%:*}
-    if [ "$BACKEND" = t3 ]; then
-      T3_THREAD_ID=$T
-      T3_PROJECT_ID=$(fm_meta_get "$RELAUNCH_META" t3_project_id)
-    fi
+    [ "$BACKEND" != t3 ] || T3_THREAD_ID=$T
   else
     # The recorded endpoint is authoritatively gone, so there is nothing to
     # adopt: create ONE fresh endpoint for the same task, opened directly in the
@@ -3694,7 +3703,6 @@ EOF
       exit 1
     fi
     T3_PROJECT_ID=$(fm_backend_t3_project_ensure "$PROJ_ABS") || exit 1
-    T3_MODEL_SELECTION=$(fm_backend_t3_model_selection "$HARNESS" "$MODEL" "$EFFORT" "$T3_PROJECT_ID") || exit 1
     # A T3 thread is bound to its worktree at creation, so the Treehouse slot
     # is leased here, non-interactively, before the endpoint exists; every
     # other session backend types `treehouse get` into the pane it just made.
@@ -4111,11 +4119,12 @@ agy_spawn_fail() {  # <detail>
 # The claude --append-system-prompt trust statement has no settings carrier and
 # is the one launch-line piece a T3 worker does not receive.
 t3_launch_deliver() {
-  local settings="$WT/.claude/settings.local.json" tmp env_json brief_text task_marker='' lavish=''
+  local settings="$WT/.claude/settings.local.json" tmp env_json brief_text task_marker='' lavish='' model_sel=''
   [ "$KIND" != ship ] && [ "$KIND" != scout ] || task_marker=$ID
   [ "$LAVISH_AXI_HOST_CONFIG_PRESENT" != 1 ] || lavish=$LAVISH_AXI_HOST
+  [ "$RELAUNCH" -eq 0 ] || model_sel=$T3_MODEL_SELECTION
   [ -f "$settings" ] || {
-    echo "error: the claude worker settings file $settings was not written before the T3 launch; refusing to start a worker with no busy or turn-end wiring" >&2
+    t3_spawn_fail "the claude worker settings file $settings was not written before the T3 launch; refusing to start a worker with no busy or turn-end wiring"
     return 1
   }
   env_json=$(jq -cn --arg gotmp "$TASK_TMP/gotmp" --arg task "$task_marker" --arg lavish "$lavish" \
@@ -4125,23 +4134,26 @@ t3_launch_deliver() {
      GIT_CONFIG_COUNT: "1", GIT_CONFIG_KEY_0: "core.hooksPath", GIT_CONFIG_VALUE_0: $hooks}
     + (if $task != "" then {FM_TASK_ID: $task} else {} end)
     + (if $lavish != "" then {LAVISH_AXI_HOST: $lavish} else {} end)
-    + (if $trace != "" then {TRACEPARENT: $trace} else {} end)') || return 1
+    + (if $trace != "" then {TRACEPARENT: $trace} else {} end)') || {
+    t3_spawn_fail "could not build the T3 worker environment for $settings"
+    return 1
+  }
   tmp="$settings.t3.$$"
   if ! jq --argjson env "$env_json" \
     '. + {env: ((.env // {}) + $env), feedbackDrafts: "off",
           attribution: {commit: "", pr: "", sessionUrl: false}}' "$settings" >"$tmp" ||
     ! mv -f "$tmp" "$settings"; then
     rm -f "$tmp"
-    echo "error: could not merge the T3 worker environment into $settings" >&2
+    t3_spawn_fail "could not merge the T3 worker environment into $settings"
     return 1
   fi
   brief_text=$("$FM_ROOT/bin/fm-operational-input.sh" encode launch-brief <"$BRIEF") || {
-    echo "error: could not encode the launch brief for the T3 thread $T" >&2
+    t3_spawn_fail "could not encode the launch brief for the T3 thread $T"
     return 1
   }
   SPAWN_LAUNCH_SENT=1
-  fm_backend_t3_turn_start "$T" "$brief_text" >/dev/null || {
-    echo "error: the launch brief could not be sent to T3 thread $T" >&2
+  fm_backend_t3_turn_start "$T" "$brief_text" "$model_sel" >/dev/null || {
+    t3_spawn_fail "the launch brief could not be sent to T3 thread $T"
     return 1
   }
   if ! fm_backend_t3_wait_session_started "$T" "$FM_T3_START_WAIT"; then
@@ -4150,16 +4162,21 @@ t3_launch_deliver() {
   fi
 }
 
-# A T3 launch that never started is closed here, in the rovo/kimi shape: the
-# record's rollback in the abort trap removes what named the thread, so the
-# thread is archived and, on a fresh spawn only, the leased slot returned.
-# A relaunch keeps its worktree - the work it holds is exactly what a relaunch
-# preserves.
+# A T3 launch that never started is closed here, in the rovo/kimi shape. On a
+# fresh spawn the record's rollback in the abort trap removes what named the
+# thread, so the thread is archived and the leased slot returned. A relaunch
+# keeps its record, thread, and worktree - the work they hold is exactly what a
+# relaunch preserves, and an archived thread could never be relaunched again -
+# so it only stops whatever session the brief turn started.
 t3_spawn_fail() {  # <detail>
   printf '%s\n' "$(status_stamp_line "failed: $1")" >>"$STATE/$ID.status"
   echo "error: $1" >&2
+  if [ "$RELAUNCH" -eq 1 ]; then
+    fm_backend_t3_session_stop "$T" 2>/dev/null || true
+    return 0
+  fi
   fm_backend_kill t3 "$T" 2>/dev/null || true
-  if [ "$RELAUNCH" -eq 0 ] && [ -n "$T3_LEASED_WT" ]; then
+  if [ -n "$T3_LEASED_WT" ]; then
     (cd "$PROJ_ABS" && treehouse return --force "$T3_LEASED_WT") >/dev/null 2>&1 ||
       echo "warning: could not return the leased Treehouse worktree $T3_LEASED_WT after the failed T3 launch of $ID" >&2
     if [ "$SPAWN_SLOT_CLAIMED" = 1 ]; then

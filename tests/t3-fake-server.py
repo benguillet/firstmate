@@ -22,6 +22,7 @@ mutate it with jq between calls:
   on-interrupt-status  session status thread.turn.interrupt sets (default
                   stopped, the v0.0.42 behavior: T3 stops the provider)
   fail-thread-create   presence makes thread.create answer 500
+  fail-turn-start      presence makes thread.turn.start answer 500
   fail-session-stop    presence makes thread.session.stop answer 200 but
                        change nothing (the ignored stop observed after archive)
   fail-archive         presence makes thread.archive answer 200 but change
@@ -230,6 +231,9 @@ class Handler(BaseHTTPRequestHandler):
                 internal()
                 return
             if kind == "thread.turn.start":
+                if flag("fail-turn-start"):
+                    internal()
+                    return
                 if thread_visible(thread):
                     message = cmd.get("message") or {}
                     thread["messages"].append({

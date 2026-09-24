@@ -140,7 +140,7 @@ t3_case() {
   : > "$T3LOG"
   FB=$(make_t3_fakebin "$CASE_DIR")
   : > "$FAKE/dispatch.log"
-  rm -f "$FAKE/fail-thread-create" "$FAKE/fail-session-stop" "$FAKE/fail-archive" \
+  rm -f "$FAKE/fail-thread-create" "$FAKE/fail-turn-start" "$FAKE/fail-session-stop" "$FAKE/fail-archive" \
     "$FAKE/on-turn-status" "$FAKE/on-interrupt-status"
 }
 
@@ -670,7 +670,7 @@ test_spawn_t3_end_to_end_then_control_peek_and_teardown() {
 }
 
 test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start() {
-  local proj pid id out status subhome
+  local proj unregistered pid id out status subhome tid wt
   t3_case spawn-refusals
   proj="$CASE_DIR/project"
   fm_git_init_commit "$proj"
@@ -679,12 +679,15 @@ test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start() {
   printf 'claude\n' > "$HOME_DIR/config/crew-harness"
   id=t3codexz1
   fm_test_spawn_brief "$HOME_DIR" "$id"
-  out=$(t3_env FM_SPAWN_NO_GUARD=1 "$ROOT/bin/fm-spawn.sh" "$id" "$proj" codex --mode no-mistakes --yolo off --backend t3 2>&1)
+  # A root T3 does not know yet: a late harness check would register it first.
+  unregistered="$CASE_DIR/unregistered"
+  fm_git_init_commit "$unregistered"
+  out=$(t3_env FM_SPAWN_NO_GUARD=1 "$ROOT/bin/fm-spawn.sh" "$id" "$unregistered" codex --mode no-mistakes --yolo off --backend t3 2>&1)
   status=$?
   [ "$status" -ne 0 ] || fail "a codex spawn on t3 must refuse"
   assert_contains "$out" "claude harness family only" "the refusal should name the supported family"
   assert_not_contains "$(cat "$T3LOG")" $'treehouse\x1f''get' "a refused harness must lease no worktree"
-  [ -z "$(dispatch_types)" ] || fail "a refused harness must create no thread, got '$(dispatch_types)'"
+  [ -z "$(dispatch_types)" ] || fail "a refused harness must register no project and create no thread, got '$(dispatch_types)'"
   assert_absent "$HOME_DIR/state/$id.meta" "a refused spawn must publish no record"
   pass "fm-spawn.sh --backend t3: a non-claude harness is refused before any lease or thread exists"
 
@@ -736,6 +739,92 @@ test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start() {
   assert_grep "failed" "$HOME_DIR/state/$id.status" "a failed start should append a failed status line"
   rm -rf "/tmp/fm-$id"
   pass "fm-spawn.sh --backend t3: a thread that never starts is archived, its lease returned, and no record left"
+
+  # A brief the server refuses to take is closed exactly like one that never starts.
+  id=t3turnfailz1
+  fm_test_spawn_brief "$HOME_DIR" "$id"
+  : > "$FAKE/fail-turn-start"
+  : > "$FAKE/dispatch.log"
+  : > "$T3LOG"
+  out=$(t3_env FM_SPAWN_NO_GUARD=1 FM_T3_START_WAIT=1 \
+    "$ROOT/bin/fm-spawn.sh" "$id" "$proj" claude --mode no-mistakes --yolo off --backend t3 2>&1)
+  status=$?
+  rm -f "$FAKE/fail-turn-start"
+  [ "$status" -ne 0 ] || fail "a launch whose brief turn is refused must fail"$'\n'"$out"
+  assert_contains "$out" "the launch brief could not be sent" "the failure should name the refused brief turn"
+  [ "$(dispatch_types)" = "thread.create thread.archive" ] \
+    || fail "a refused brief turn should archive the thread it created, got '$(dispatch_types)'"
+  tid=$(dispatch_last thread.create .threadId)
+  wt=$(dispatch_last thread.create .worktreePath)
+  [ "$(thread_field "$tid" .archivedAt)" != null ] || fail "the created thread should be archived"
+  assert_contains "$(cat "$T3LOG")" $'treehouse\x1f''return'$'\x1f''--force'$'\x1f'"$wt" "a refused brief turn should return the leased worktree"
+  [ ! -d "$wt" ] || fail "the leased worktree should be gone after the failed spawn"
+  assert_absent "$HOME_DIR/state/$id.meta" "a refused brief turn should leave no task record"
+  rm -rf "/tmp/fm-$id"
+  pass "fm-spawn.sh --backend t3: a refused brief turn archives the thread, returns the lease, and leaves no record"
+}
+
+test_spawn_t3_relaunch_carries_model_and_keeps_thread_on_failure() {
+  local proj pid id=t3relaunchz1 out status tid wt meta
+  t3_case relaunch
+  proj="$CASE_DIR/project"
+  fm_git_init_commit "$proj"
+  pid=$(uuid)
+  seed_project "$pid" "$(cd "$proj" && pwd -P)"
+  printf 'claude\n' > "$HOME_DIR/config/crew-harness"
+  fm_test_spawn_brief "$HOME_DIR" "$id"
+  out=$(t3_env FM_SPAWN_NO_GUARD=1 FM_T3_START_WAIT=5 \
+    "$ROOT/bin/fm-spawn.sh" "$id" "$proj" claude --model claude-test-model --effort high \
+    --mode no-mistakes --yolo off --backend t3 2>&1)
+  status=$?
+  expect_code 0 "$status" "the fresh spawn under relaunch should succeed"$'\n'"$out"
+  tid=$(dispatch_last thread.create .threadId)
+  wt=$(dispatch_last thread.create .worktreePath)
+  meta="$HOME_DIR/state/$id.meta"
+
+  set_thread "$tid" '.session.status = "stopped"'
+  : > "$FAKE/dispatch.log"
+  out=$(t3_env FM_SPAWN_NO_GUARD=1 FM_T3_START_WAIT=5 \
+    "$ROOT/bin/fm-spawn.sh" "$id" --relaunch --harness claude --model claude-next-model --effort low 2>&1)
+  status=$?
+  expect_code 0 "$status" "a T3 relaunch should succeed"$'\n'"$out"
+  [ "$(dispatch_types)" = "thread.turn.start" ] || fail "a relaunch should only start the brief turn on the adopted thread, got '$(dispatch_types)'"
+  [ "$(dispatch_last thread.turn.start .threadId)" = "$tid" ] || fail "the relaunch brief should go to the task's own thread"
+  [ "$(dispatch_last thread.turn.start '.modelSelection | tojson')" = '{"instanceId":"claudeAgent","model":"claude-next-model","options":[{"id":"effort","value":"low"}]}' ] \
+    || fail "the relaunch brief turn should carry the relaunch's model and effort"
+  assert_grep "model=claude-next-model" "$meta" "meta should record the relaunch model"
+  pass "fm-spawn.sh --relaunch on t3: the brief turn carries the relaunch's model selection"
+
+  set_thread "$tid" '.session.status = "stopped"'
+  cp "$meta" "$CASE_DIR/meta.before"
+  : > "$FAKE/dispatch.log"
+  out=$(t3_env FM_SPAWN_NO_GUARD=1 "$ROOT/bin/fm-spawn.sh" "$id" --relaunch --harness codex 2>&1)
+  status=$?
+  [ "$status" -ne 0 ] || fail "a codex relaunch on t3 must refuse"
+  assert_contains "$out" "claude harness family only" "the relaunch refusal should name the supported family"
+  [ -z "$(dispatch_types)" ] || fail "a refused relaunch must dispatch nothing, got '$(dispatch_types)'"
+  cmp -s "$meta" "$CASE_DIR/meta.before" || fail "a refused relaunch must leave the record untouched"
+  pass "fm-spawn.sh --relaunch on t3: a non-claude harness is refused before the record changes"
+
+  # The session reads ready, never starting or running, so the brief never starts.
+  printf 'ready\n' > "$FAKE/on-turn-status"
+  : > "$FAKE/dispatch.log"
+  : > "$T3LOG"
+  out=$(t3_env FM_SPAWN_NO_GUARD=1 FM_T3_START_WAIT=1 \
+    "$ROOT/bin/fm-spawn.sh" "$id" --relaunch --harness claude 2>&1)
+  status=$?
+  rm -f "$FAKE/on-turn-status"
+  [ "$status" -ne 0 ] || fail "a relaunch whose session never starts must fail"$'\n'"$out"
+  assert_contains "$out" "reported no starting or running session" "the relaunch failure should say what was not observed"
+  [ "$(dispatch_types)" = "thread.turn.start thread.session.stop" ] \
+    || fail "a failed relaunch should stop the session it started and never archive the thread, got '$(dispatch_types)'"
+  [ "$(thread_field "$tid" .archivedAt)" = null ] || fail "a failed relaunch must keep the thread relaunchable"
+  [ "$(thread_field "$tid" .session.status)" = stopped ] || fail "a failed relaunch should leave the session stopped"
+  [ -d "$wt" ] || fail "a failed relaunch must keep the worktree"
+  assert_not_contains "$(cat "$T3LOG")" $'treehouse\x1f''return' "a failed relaunch must not return the worktree"
+  assert_present "$meta" "a failed relaunch keeps the record naming the thread"
+  rm -rf "/tmp/fm-$id"
+  pass "fm-spawn.sh --relaunch on t3: a relaunch that never starts stops the session but keeps the thread and worktree"
 }
 
 test_origin_requires_running_server
@@ -752,3 +841,4 @@ test_session_stop_and_kill_order_and_proof
 test_dispatcher_routes_t3_operations
 test_spawn_t3_end_to_end_then_control_peek_and_teardown
 test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start
+test_spawn_t3_relaunch_carries_model_and_keeps_thread_on_failure

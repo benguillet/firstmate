@@ -911,7 +911,10 @@ resolve_relaunch_profile() {
   [ "$account_model" != default ] || account_model=
   account=$(fm_worker_account_select "$TARGET_HARNESS" "${FM_CONFIG_OVERRIDE:-$FM_HOME/config}" \
     "$account_model" "$TARGET_HARNESS") || return 1
-  [ "$BACKEND" != t3 ] || fm_backend_t3_account_pin_check "$TARGET_HARNESS" "$account" || return 1
+  if [ "$BACKEND" = t3 ]; then
+    fm_backend_t3_harness_check "$TARGET_HARNESS" || return 1
+    fm_backend_t3_account_pin_check "$TARGET_HARNESS" "$account" || return 1
+  fi
 }
 
 # safe_checkpoint: prove, before anything is stopped, that the work a relaunch
