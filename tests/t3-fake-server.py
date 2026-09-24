@@ -27,8 +27,9 @@ mutate it with jq between calls:
                        500, then removes itself
   fail-turn-start      presence makes thread.turn.start answer 500
   unlanded-turn-start  presence makes thread.turn.start answer 200 without
-                       appending the message, a turn accepted but not yet
-                       visible in a readable thread's transcript
+                       appending the message: a defensive model of a turn
+                       accepted but not yet visible in a readable thread's
+                       transcript, a shape never observed on v0.0.42
   fail-session-stop    presence makes thread.session.stop answer 200 but
                        change nothing (the ignored stop observed after archive)
   fail-runtime-mode-set  presence makes thread.runtime-mode.set answer 200
