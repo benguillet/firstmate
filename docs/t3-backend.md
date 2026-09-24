@@ -84,7 +84,7 @@ A relaunch onto a non-`claude` harness refuses before the running agent is stopp
 `--model` and `--effort` on a relaunch ride that brief turn as its model selection, so the replacement runs on the model the record names.
 A relaunch whose brief turn never starts stops the session again but keeps the thread, the record, and the worktree, so the task can be relaunched once the cause is fixed.
 A fresh spawn that fails before its task record is published archives the thread when its close can be proven, and returns a clean slot's lease only after that proven close, under the Treehouse project lock it still holds.
-There, an unproven close or a dirty or unreadable slot keeps the lease and drops only this task's own slot claim, so no claim names a task without a record and the slot's previous owner keeps its teardown protection.
+There, an unproven close keeps both the lease and this task's slot claim, so no stale owner's teardown recycles a slot an open thread is still bound to, while a proven close on a dirty or unreadable slot keeps the lease and drops only this task's own claim, so the slot's previous owner keeps its teardown protection.
 A launch-delivery failure after the record exists keeps both the lease and the claim unless the close was proven, the slot is clean, and the Treehouse project lock was taken within a bounded wait.
 Whatever either path leaves in place, it names in a warning.
 

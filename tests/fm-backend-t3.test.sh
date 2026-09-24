@@ -999,8 +999,8 @@ test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start() {
   assert_absent "$HOME_DIR/state/$id.meta" "an aborted spawn should leave no record"
   pass "fm-spawn.sh --backend t3: an accepted thread whose read-back failed is archived by its minted id"
 
-  # While the thread stays unreadable its close is unproven: the lease on a
-  # slot still holding a crashed worker's work stays, but this task's claim goes.
+  # While the thread stays unreadable its close is unproven: the lease and this
+  # task's claim both stay, so no stale owner's teardown recycles the slot.
   id=t3readfailz1
   fm_test_spawn_brief "$HOME_DIR" "$id"
   : > "$CASE_DIR/pool.dirty"
@@ -1019,14 +1019,13 @@ test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start() {
     || fail "the abort should attempt to close the minted thread after the failed read-back"
   [ "$(thread_field "$tid" .archivedAt)" = null ] || fail "the unreadable thread should still be unarchived"
   assert_contains "$out" "T3 thread $tid could not be proven closed" "the warning should name the unclosed thread"
-  assert_contains "$out" "worktree $wt was left in place" "the warning should name the kept worktree"
-  assert_contains "$out" "this task's own slot claim was released" "the warning should say the aborted task's claim was released"
+  assert_contains "$out" "worktree $wt and this task's slot claim were left in place" "the warning should name the kept worktree and claim"
   assert_not_contains "$(cat "$T3LOG")" $'treehouse\x1f''return' "an unproven close must not return the lease"
   [ "$(cat "$wt/uncommitted.txt" 2>/dev/null)" = "crashed worker work" ] || fail "an unproven close must keep the leased worktree's work"
-  ! grep -qx "task=$id" "$(dirname "$wt")/.fm-slot-owner" 2>/dev/null \
-    || fail "an aborted task must not keep its claim on a slot while its record is gone"
+  grep -qx "task=$id" "$(dirname "$wt")/.fm-slot-owner" 2>/dev/null \
+    || fail "an unproven close must keep this task's claim on the slot its open thread is still bound to"
   assert_absent "$HOME_DIR/state/$id.meta" "an aborted spawn should leave no record"
-  pass "fm-spawn.sh --backend t3: an abort whose thread close is unproven keeps the lease and says so"
+  pass "fm-spawn.sh --backend t3: an abort whose thread close is unproven keeps the lease and the claim and says so"
 }
 
 test_spawn_t3_relaunch_carries_model_and_keeps_thread_on_failure() {

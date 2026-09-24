@@ -1311,14 +1311,16 @@ spawn_abort_cleanup() {
   fi
   # A T3 spawn leases its Treehouse slot itself before the thread exists
   # (there is no pane to type `treehouse get` into), so an abort before the
-  # record is published archives the thread it created and returns the lease -
-  # only once that close is proven and the slot reads clean, under the
-  # Treehouse project lock such an abort still holds. An unproven close or a
-  # dirty or unreadable slot keeps the lease, with a warning, and only this
-  # task's own claim on it is released below, so the abort never leaves a claim
-  # naming a task with no record and the slot's previous owner keeps its
-  # unlanded-work protection at teardown. Once the record exists, teardown owns
-  # both, exactly as for every other backend.
+  # record is published archives the thread it created, under the Treehouse
+  # project lock such an abort still holds, and then:
+  #   - unproven close: keeps the lease and this task's claim, so no stale
+  #     owner's teardown recycles a slot an open thread is still bound to;
+  #   - proven close, dirty or unreadable slot: keeps the lease and releases
+  #     only this task's own claim below, so the slot's previous owner keeps
+  #     its unlanded-work protection at teardown;
+  #   - proven close, clean slot: returns the lease and releases the claim.
+  # Whatever is left in place is named in a warning. Once the record exists,
+  # teardown owns both, exactly as for every other backend.
   if [ "$T3_ABORT_CLEANUP" = 1 ]; then
     T3_ABORT_CLEANUP=0
     if [ -n "${T3_THREAD_ID:-}" ]; then
@@ -1331,7 +1333,8 @@ spawn_abort_cleanup() {
     if [ -n "${T3_LEASED_WT:-}" ] && [ -n "${PROJ_ABS:-}" ] &&
       [ ! -e "$STATE/$ID.meta" ] && [ ! -L "$STATE/$ID.meta" ]; then
       if [ -n "$t3_unclosed" ]; then
-        echo "warning: T3 thread $t3_unclosed could not be proven closed after the aborted spawn of $ID; its leased Treehouse worktree $T3_LEASED_WT was left in place for a person to reconcile, and this task's own slot claim was released" >&2
+        echo "warning: T3 thread $t3_unclosed could not be proven closed after the aborted spawn of $ID; its leased Treehouse worktree $T3_LEASED_WT and this task's slot claim were left in place for a person to reconcile" >&2
+        SPAWN_SLOT_CLAIMED=0
       elif t3_leased_slot_clean; then
         (cd "$PROJ_ABS" && treehouse return --force "$T3_LEASED_WT") >/dev/null 2>&1 ||
           echo "warning: could not return the leased Treehouse worktree $T3_LEASED_WT after the aborted spawn of $ID" >&2
@@ -3731,8 +3734,10 @@ EOF
     # other session backend types `treehouse get` into the pane it just made.
     # The lease is durable: the abort trap and t3_spawn_fail return it only
     # once the thread's close is proven, the slot reads clean, and the
-    # Treehouse project lock could be taken, and otherwise leave it in place
-    # with a warning; once the record exists, teardown returns it.
+    # Treehouse project lock could be taken. An unproven close keeps the lease
+    # and this task's claim; a proven close on a dirty or unreadable slot keeps
+    # the lease, and only the abort trap then releases this task's claim. Each
+    # is named in a warning; once the record exists, teardown returns it.
     T3_LEASE_OUT=$(cd "$PROJ_ABS" && treehouse get --lease --lease-holder "$W") || {
       echo "error: treehouse get --lease failed for $PROJ_ABS; no T3 thread was created" >&2
       exit 1
