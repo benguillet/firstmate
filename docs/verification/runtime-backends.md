@@ -1957,7 +1957,7 @@ tests/fm-teardown-endpoint-safety.test.sh
 tests/fm-control.test.sh
 ```
 
-The fake-server suite pins the response shapes above (including the accepted-but-dropped turn on an archived thread and the not-found after archive), token minting and refresh without leaking the token, the worktree-bound `thread.create`, the stop-then-archive close order and teardown's refusal to return the lease before that close is proven, the dispatch capability probe's supported and missing-endpoint outcomes, and the spawn, peek, control, and teardown paths.
+The fake-server suite pins the response shapes above (including the accepted-but-dropped turn on an archived thread and the not-found after archive), token minting and refresh without leaking the token, the worktree-bound `thread.create`, the stop-then-archive close order and teardown's refusal to return the lease before that close is proven, the dispatch capability probe's supported, missing-endpoint, auth-failure, and server-failure outcomes, and the spawn, peek, control, and teardown paths.
 
 ## Codex App host tools
 
