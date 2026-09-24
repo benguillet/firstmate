@@ -91,7 +91,8 @@ Whatever either path leaves in place, it names in a warning.
 Cleanup keeps every shared Firstmate safety check: a scout still requires its report and completed decision inventory, and a ship still refuses dirty or unlanded work.
 It then stops the provider session when one is live, waits for T3 to report it stopped, archives the thread, and re-reads it: only T3's own not-found proves the close.
 Stopping first is deliberate, because a stop sent after the archive is ignored and would leave the provider process running.
-A close that cannot be proven keeps the task's records so the thread can still be reconciled, and the leased worktree is returned through Treehouse as on every other backend.
+Only after that proven close does teardown return the leased worktree through Treehouse and release the task's slot claim, because a returned slot keeps the thread's `worktreePath` and T3 would start the provider there for the slot's next holder.
+A close that cannot be proven stops the cleanup before that return, even under `--force`, keeping the task's records and the leased slot so the thread can still be reconciled.
 Archived threads stay in T3's archive list; Firstmate never deletes a thread.
 
 ## Active limits

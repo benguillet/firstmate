@@ -810,7 +810,8 @@ fm_backend_t3_send_key() {  # <thread-id> <key> [expected-label]
 # `empty`. A thread the server no longer knows - before the send, or found
 # gone by the re-read after a silently dropped turn - reports `send-failed`
 # without retrying; other dispatch failures retry <retries> times; an accepted
-# send whose landing could not be read reports `pending-unproven`.
+# send whose landing could not be read reports `pending`: accepted, landing not
+# confirmed.
 fm_backend_t3_send_text_submit() {  # <thread-id> <text> <retries> <enter-sleep> <settle> [expected-label]
   local thread=$1 text=$2 retries=${3:-1} sleep_s=${4:-0.5} attempt=0 rc mid mode
   case "$retries" in ''|*[!0-9]*|0) retries=1 ;; esac
@@ -826,7 +827,7 @@ fm_backend_t3_send_text_submit() {  # <thread-id> <text> <retries> <enter-sleep>
       case "$rc" in
         0) printf 'empty' ;;
         4) printf 'send-failed' ;;
-        *) printf 'pending-unproven' ;;
+        *) printf 'pending' ;;
       esac
       return 0
     fi

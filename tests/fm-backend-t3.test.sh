@@ -79,7 +79,9 @@ esac
 exit 2
 SH
   # `treehouse get --lease` creates a real linked worktree of the project the
-  # spawn runs it from and prints only its path; `return --force` removes it.
+  # spawn runs it from and prints only its path; `return --force` removes it
+  # and keeps <pool>.dispatch-at-return, the commands the fake server had taken
+  # by then, so a case can order the endpoint close against the return.
   cat > "$fb/treehouse" <<'SH'
 #!/usr/bin/env bash
 set -u
@@ -113,6 +115,7 @@ case "${1:-}" in
   return)
     shift
     [ "${1:-}" != --force ] || shift
+    cp "${FM_T3_FAKE_DISPATCH:?}" "${FM_FAKE_TREEHOUSE_POOL:?}.dispatch-at-return"
     git worktree remove --force "${1:?}" >/dev/null 2>&1 || rm -rf "${1:?}"
     exit 0
     ;;
@@ -166,7 +169,7 @@ t3_env() {
     FM_CONFIG_OVERRIDE="$HOME_DIR/config" FM_PROJECTS_OVERRIDE="$HOME_DIR/projects" \
     HOME="$CASE_DIR/user-home" CLAUDE_CONFIG_DIR='' \
     PATH="$FB:$PATH" FM_T3_FAKE_LOG="$T3LOG" FM_T3_FAKE_TOKENS="$FAKE/tokens" \
-    FM_FAKE_TREEHOUSE_POOL="$CASE_DIR/pool" "$@"
+    FM_T3_FAKE_DISPATCH="$FAKE/dispatch.log" FM_FAKE_TREEHOUSE_POOL="$CASE_DIR/pool" "$@"
 }
 
 # t3_call <fn> [args...]: run one adapter function through the dispatcher.
@@ -557,7 +560,15 @@ test_send_text_submit_is_a_turn_start() {
     || fail "a 404 must not be retried, saw $(grep -c 'POST /api/orchestration/dispatch' "$FAKE/http.log") posts"
   out=$(FM_T3_ORIGIN_OVERRIDE=http://127.0.0.1:9 FM_T3_HTTP_TIMEOUT=2 t3_call fm_backend_t3_send_text_submit "$tid" "unreachable" 2 0.01 0.01)
   [ "$out" = send-failed ] || fail "an unreachable server should report send-failed, got '$out'"
-  pass "fm_backend_t3_send_text_submit: a 2xx turn.start is delivery, a busy thread queues, a gone thread is not retried"
+  # An accepted turn whose landing cannot be read back is delivered, unconfirmed.
+  set_thread "$tid" '.archivedAt = null'
+  : > "$FAKE/fail-thread-read"
+  : > "$FAKE/dispatch.log"
+  out=$(t3_call fm_backend_t3_send_text_submit "$tid" "accepted, unread" 3 0.01 0.01)
+  rm -f "$FAKE/fail-thread-read"
+  [ "$out" = pending ] || fail "an accepted turn whose landing re-read fails should report pending, got '$out'"
+  [ "$(dispatch_types)" = "thread.turn.start" ] || fail "an accepted turn must not be resent, got '$(dispatch_types)'"
+  pass "fm_backend_t3_send_text_submit: a 2xx turn.start is delivery, a busy thread queues, a gone thread is not retried, an unread landing is pending"
 }
 
 test_send_key_maps_interrupt_and_enter() {
@@ -764,13 +775,34 @@ test_spawn_t3_end_to_end_then_control_peek_and_teardown() {
   [ -z "$(dispatch_types)" ] || fail "an already-stopped exit must dispatch nothing"
   pass "fm-control.sh: interrupt and exit drive T3's interrupt and session stop with proven postconditions"
 
+  # A close T3 does not apply stops teardown before the lease goes back, even
+  # under --force: the returned slot would stay bound to the still-open thread.
+  set_thread "$tid" '.session.status = "ready"'
+  : > "$FAKE/fail-archive"
+  : > "$FAKE/dispatch.log"
+  : > "$T3LOG"
+  out=$(t3_env env -u TMUX -u TMUX_PANE "$ROOT/bin/fm-teardown.sh" "$id" --force 2>&1)
+  status=$?
+  rm -f "$FAKE/fail-archive"
+  [ "$status" -ne 0 ] || fail "a T3 teardown whose archive does not take must fail"$'\n'"$out"
+  assert_contains "$out" "stopping this cleanup without removing the task's records" "the refusal should say the records are kept"
+  [ "$(thread_field "$tid" .archivedAt)" = null ] || fail "the fake should leave the thread unarchived"
+  assert_not_contains "$(cat "$T3LOG")" $'treehouse\x1f''return' "an unproven close must not return the lease"
+  [ -d "$wt" ] || fail "an unproven close must keep the leased worktree"
+  assert_present "$settings" "an unproven close must leave the worker's wiring in the worktree"
+  assert_present "$meta" "an unproven close must keep the task record"
+  pass "fm-teardown.sh: a T3 close that cannot be proven refuses before the lease is returned, even under --force"
+
   # Teardown stops, archives, proves the 404, returns the lease, and revokes the session.
   set_thread "$tid" '.session.status = "ready"'
   : > "$FAKE/dispatch.log"
+  rm -f "$CASE_DIR/pool.dispatch-at-return"
   out=$(t3_env env -u TMUX -u TMUX_PANE "$ROOT/bin/fm-teardown.sh" "$id" --force 2>&1)
   status=$?
   expect_code 0 "$status" "fm-teardown should complete for a T3 task"$'\n'"$out"
   [ "$(dispatch_types)" = "thread.session.stop thread.archive" ] || fail "teardown should stop then archive, got '$(dispatch_types)'"
+  [ "$(jq -r .type "$CASE_DIR/pool.dispatch-at-return" 2>/dev/null | tr '\n' ' ' | sed 's/ $//')" = "thread.session.stop thread.archive" ] \
+    || fail "teardown should stop and archive the thread before it returns the lease"
   [ "$(thread_field "$tid" .archivedAt)" != null ] || fail "teardown should archive the thread"
   assert_contains "$(cat "$T3LOG")" $'treehouse\x1f''return'$'\x1f''--force'$'\x1f'"$wt" "teardown should return the leased worktree"
   assert_absent "$meta" "teardown should remove the task record"

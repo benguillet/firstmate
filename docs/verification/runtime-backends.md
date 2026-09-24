@@ -373,13 +373,14 @@ Any other read failure - a momentarily unresponsive server, or a teardown PATH w
 
 Two bounds of the refusal are known and deliberately not closed here.
 
-`--force` overrides it at exactly one site, the generic non-Herdr/non-Orca close.
+`--force` overrides it at exactly one site, the generic non-Herdr/non-Orca/non-T3 close.
 That is the only close where continuing is actually reachable: the worktree is already returned by then and nothing after it needs the backend that could not close, so `--force` - the operator's existing authority to discard a task's records - can mean something there.
 A forced run still prints the full diagnosis naming the backend, the target, and that the close failed, so what may survive is never silent.
 It states what `--force` authorizes rather than what will have happened, because a later refusal in the same run - the Herdr confirmed-gone gate, or the inactive-reconcile delivery gate - can still stop it with every record retained.
 
 The Orca close refuses under `--force` too.
 The step immediately after it removes the Orca worktree through the same CLI whose absence is the only thing that arm ever reports, so a forced continue would die there having removed nothing while claiming the records were already gone.
+The T3 close refuses under `--force` too, and runs before the worktree return rather than after it: a returned slot keeps the thread's `worktreePath`, so a forced continue would hand the pool a slot the still-open thread is bound to.
 The two child close sites inside forced secondmate cleanup also keep refusing: that path is only ever reached under `--force`, so honoring force there would delete the refusal rather than override it, and would contradict the adjacent Herdr child gate that stops forced cleanup for the same hazard.
 
 The retained record is this run's, not a durable guarantee.
