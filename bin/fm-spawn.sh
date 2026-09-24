@@ -1217,6 +1217,18 @@ parse_orca_worktree_result() {
   fi
 }
 
+# `treehouse return --force` cleans and resets the slot, and a leased slot can
+# still hold a crashed worker's uncommitted work, so a T3 lease is returned
+# only from a worktree whose status reads clean.
+t3_leased_slot_clean() {
+  local porcelain
+  if porcelain=$(git -C "$T3_LEASED_WT" status --porcelain 2>/dev/null) && [ -z "$porcelain" ]; then
+    return 0
+  fi
+  echo "warning: the leased Treehouse worktree $T3_LEASED_WT of task $ID holds uncommitted or unreadable work; its lease and slot claim were left in place for a person to reconcile" >&2
+  return 1
+}
+
 spawn_abort_cleanup() {
   local status=$?
   if [ "$RELAUNCH_REPLACEMENT_PENDING" = 1 ] &&
@@ -1313,8 +1325,12 @@ spawn_abort_cleanup() {
     fi
     if [ -n "${T3_LEASED_WT:-}" ] && [ -n "${PROJ_ABS:-}" ] &&
       [ ! -e "$STATE/$ID.meta" ] && [ ! -L "$STATE/$ID.meta" ]; then
-      (cd "$PROJ_ABS" && treehouse return --force "$T3_LEASED_WT") >/dev/null 2>&1 ||
-        echo "warning: could not return the leased Treehouse worktree $T3_LEASED_WT after the aborted spawn of $ID" >&2
+      if t3_leased_slot_clean; then
+        (cd "$PROJ_ABS" && treehouse return --force "$T3_LEASED_WT") >/dev/null 2>&1 ||
+          echo "warning: could not return the leased Treehouse worktree $T3_LEASED_WT after the aborted spawn of $ID" >&2
+      else
+        SPAWN_SLOT_CLAIMED=0
+      fi
     fi
   fi
   if [ "$SPAWN_TASK_LOCK_HELD" = 1 ]; then
@@ -4206,6 +4222,10 @@ t3_spawn_fail() {  # <detail>
     sleep 0.1
   done
   SPAWN_TREEHOUSE_PROJECT_LOCK_HELD=1
+  if ! t3_leased_slot_clean; then
+    SPAWN_SLOT_CLAIMED=0
+    return 0
+  fi
   if ! (cd "$PROJ_ABS" && treehouse return --force "$T3_LEASED_WT") >/dev/null 2>&1; then
     echo "warning: could not return the leased Treehouse worktree $T3_LEASED_WT of closed T3 thread $T after the failed launch of $ID; leaving its slot claim in place" >&2
     SPAWN_SLOT_CLAIMED=0

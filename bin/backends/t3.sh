@@ -24,7 +24,8 @@
 # GET /api/orchestration/threads/<id> (detail; `?turnLimit=N` bounds it).
 # Writes: POST /api/orchestration/dispatch with the same typed commands the web
 # client sends - project.create, thread.create, thread.turn.start,
-# thread.turn.interrupt, thread.session.stop, thread.archive.
+# thread.runtime-mode.set, thread.turn.interrupt, thread.session.stop,
+# thread.archive.
 # Every call carries a short-lived bearer session minted with
 # `t3 auth session issue --ttl <FM_T3_TOKEN_TTL, default 1h> --json`, cached per
 # home under state/.t3-session (session id and local expiry) and

@@ -96,6 +96,8 @@ case "${1:-}" in
     n=$(( $(ls "$POOL" | wc -l | tr -d ' ') + 1 ))
     wt="$POOL/slot-$n"
     git worktree add --quiet --detach "$wt" >/dev/null 2>&1 || exit 1
+    # <pool>.dirty hands out a slot still holding a crashed worker's work.
+    [ ! -e "$POOL.dirty" ] || printf 'crashed worker work\n' > "$wt/uncommitted.txt"
     printf '%s\n' "$wt"
     exit 0
     ;;
@@ -905,7 +907,7 @@ test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start() {
   done
   # shellcheck disable=SC2016  # $0, $1, and $2 are the child shell's own positionals.
   t3_env bash -c '. "$0/bin/fm-wake-lib.sh"; lock=$(fm_treehouse_project_lock_path "$1") || exit 1
-    fm_lock_try_acquire "$lock" || exit 1; printf "%s\n" "$lock" > "$2"; exec sleep 30' \
+    fm_lock_try_acquire "$lock" || exit 1; printf "%s\n" "$$" > "$2"; exec sleep 30' \
     "$ROOT" "$proj" "$CASE_DIR/lock-held" &
   holder=$!
   for _ in $(seq 1 50); do
@@ -914,7 +916,7 @@ test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start() {
   done
   wait "$spawn_pid"
   status=$?
-  kill "$holder" 2>/dev/null || true
+  kill "$(cat "$CASE_DIR/lock-held" 2>/dev/null)" "$holder" 2>/dev/null || true
   wait "$holder" 2>/dev/null || true
   rm -f "$FAKE/on-turn-status"
   out=$(cat "$CASE_DIR/locked.out")
@@ -929,6 +931,41 @@ test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start() {
   [ -d "$wt" ] || fail "a contended lock must keep the leased worktree"
   rm -rf "/tmp/fm-$id"
   pass "fm-spawn.sh --backend t3: a failed launch bounds its Treehouse lock wait and leaves the lease when it is held"
+
+  # An abort before the record exists returns a clean slot...
+  id=t3abortcleanz1
+  fm_test_spawn_brief "$HOME_DIR" "$id"
+  : > "$FAKE/fail-thread-create"
+  : > "$FAKE/dispatch.log"
+  : > "$T3LOG"
+  out=$(t3_env FM_SPAWN_NO_GUARD=1 "$ROOT/bin/fm-spawn.sh" "$id" "$proj" claude --mode no-mistakes --yolo off --backend t3 2>&1)
+  status=$?
+  rm -f "$FAKE/fail-thread-create"
+  [ "$status" -ne 0 ] || fail "a spawn whose thread.create fails must fail"$'\n'"$out"
+  assert_contains "$(cat "$T3LOG")" $'treehouse\x1f''return'$'\x1f''--force' "an aborted spawn on a clean slot should return the lease"$'\n'"$out"
+  assert_not_contains "$out" "holds uncommitted or unreadable work" "a clean slot must not be reported dirty"
+  assert_absent "$HOME_DIR/state/$id.meta" "an aborted spawn should leave no record"
+  pass "fm-spawn.sh --backend t3: an abort before the record returns a clean leased slot"
+
+  # ...but never force-returns one holding someone else's uncommitted work.
+  id=t3abortdirtyz1
+  fm_test_spawn_brief "$HOME_DIR" "$id"
+  : > "$CASE_DIR/pool.dirty"
+  : > "$FAKE/fail-thread-create"
+  : > "$FAKE/dispatch.log"
+  : > "$T3LOG"
+  out=$(t3_env FM_SPAWN_NO_GUARD=1 "$ROOT/bin/fm-spawn.sh" "$id" "$proj" claude --mode no-mistakes --yolo off --backend t3 2>&1)
+  status=$?
+  rm -f "$FAKE/fail-thread-create" "$CASE_DIR/pool.dirty"
+  [ "$status" -ne 0 ] || fail "a spawn whose thread.create fails must fail"$'\n'"$out"
+  [ -z "$(dispatch_types)" ] || fail "a refused thread.create must dispatch nothing further, got '$(dispatch_types)'"
+  assert_not_contains "$(cat "$T3LOG")" $'treehouse\x1f''return' "a dirty leased slot must not be returned"
+  wt=$(compgen -G "$CASE_DIR/pool/*/uncommitted.txt" | head -n 1)
+  [ -n "$wt" ] || fail "the uncommitted file in the leased slot must survive"
+  [ "$(cat "$wt")" = "crashed worker work" ] || fail "the uncommitted file in the leased slot must keep its content"
+  assert_contains "$out" "worktree $(dirname "$wt") of task $id holds uncommitted or unreadable work" "the warning should name the dirty worktree"
+  assert_absent "$HOME_DIR/state/$id.meta" "an aborted spawn should leave no record"
+  pass "fm-spawn.sh --backend t3: an abort never force-returns a leased slot holding uncommitted work"
 }
 
 test_spawn_t3_relaunch_carries_model_and_keeps_thread_on_failure() {

@@ -83,7 +83,8 @@ T3 resumes the provider's own conversation, so unlike a terminal relaunch the re
 A relaunch onto a non-`claude` harness refuses before the running agent is stopped.
 `--model` and `--effort` on a relaunch ride that brief turn as its model selection, so the replacement runs on the model the record names.
 A relaunch whose brief turn never starts stops the session again but keeps the thread, the record, and the worktree, so the task can be relaunched once the cause is fixed.
-A fresh spawn that fails after creating its thread archives the thread and returns the leased worktree.
+A fresh spawn that fails after creating its thread archives the thread when its close can be proven.
+It returns the leased worktree and releases its slot claim only when that close was proven, the worktree is clean, and the Treehouse project lock could be taken within a bounded wait; otherwise a warning names what was left in place.
 
 Cleanup keeps every shared Firstmate safety check: a scout still requires its report and completed decision inventory, and a ship still refuses dirty or unlanded work.
 It then stops the provider session when one is live, waits for T3 to report it stopped, archives the thread, and re-reads it: only T3's own not-found proves the close.
