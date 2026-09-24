@@ -19,8 +19,8 @@ Prerequisites:
 Select it with local `config/backend` containing `t3`, `FM_BACKEND=t3` for one launch, `--backend t3` on one spawn under that task's own authority, or an explicit request to Firstmate.
 It is never auto-detected, even when Firstmate itself runs inside a T3 Code thread.
 
-A spawn stops before anything is leased or created when a required tool is missing, when the server's runtime file `~/.t3/userdata/server-runtime.json` (or `$T3CODE_HOME/userdata/server-runtime.json`) names no reachable origin, when the harness is not `claude`, when a raw launch command is given, or when `--secondmate` is requested.
-`FM_T3_ORIGIN` and `FM_T3_HOME` override server discovery for verification against another server.
+A spawn stops before anything is leased or created when a required tool is missing, when the server's runtime file `~/.t3/userdata/server-runtime.json` (or `$T3CODE_HOME/userdata/server-runtime.json`) names no reachable origin, when the harness is not `claude`, when `config/claude-account` declares a Claude account pin, when a raw launch command is given, or when `--secondmate` is requested.
+`FM_T3_ORIGIN` overrides server discovery for verification against another server; `T3CODE_HOME` selects another T3 home for discovery, the model manifest, and the `t3` CLI alike.
 
 Verify setup by spawning a small task and confirming metadata contains `backend=t3`, `t3_thread_id=`, and `t3_project_id=`, then opening the thread in T3 Code under the repository's project.
 Routine supervision does not require the GUI: `bin/fm-peek.sh <id>` renders the thread's transcript tail, and `FM_HOME=<home> bin/fm-send.sh <id> '<text>'` steers it.
@@ -86,6 +86,7 @@ Archived threads stay in T3's archive list; Firstmate never deletes a thread.
 - Secondmate spawns are unsupported.
 - The claude system-prompt trust statement a terminal launch adds cannot be delivered, because no settings key carries it and T3 sets the command line; the brief's own worker-role section still establishes the task identity.
 - The provider runs with the credentials T3's server holds; `CLAUDE_CONFIG_DIR` and the launch-environment allowlist do not reach it.
+- A Claude worker account pin (`config/claude-account`) cannot be honored, because T3 launches the provider with its server's own login; a spawn or relaunch on `t3` refuses while one is declared rather than record a pin that did not apply.
 - A relaunch resumes the thread's conversation rather than starting a fresh one, and cannot re-create an archived or deleted thread.
 - Settling or archiving a worker's thread in the T3 GUI stops or hides its provider; Firstmate reads the first as an idle worker it can wake and the second as a gone endpoint.
 - T3 hides archived threads from its detail endpoint, so Firstmate cannot distinguish an archived thread from a deleted one; both read as gone.

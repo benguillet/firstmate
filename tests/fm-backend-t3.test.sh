@@ -145,10 +145,10 @@ t3_case() {
 }
 
 # t3_env <cmd...>: the environment every adapter and script call shares.
-# FM_T3_ORIGIN_OVERRIDE and FM_T3_HOME_OVERRIDE let one case point the adapter
+# FM_T3_ORIGIN_OVERRIDE and T3CODE_HOME_OVERRIDE let one case point the adapter
 # at a dead port or an empty T3 home without losing the rest of the wiring.
 t3_env() {
-  env FM_T3_ORIGIN="${FM_T3_ORIGIN_OVERRIDE:-$ORIGIN}" FM_T3_HOME="${FM_T3_HOME_OVERRIDE:-$T3HOME}" \
+  env FM_T3_ORIGIN="${FM_T3_ORIGIN_OVERRIDE:-$ORIGIN}" T3CODE_HOME="${T3CODE_HOME_OVERRIDE:-$T3HOME}" \
     FM_HOME="$HOME_DIR" FM_ROOT_OVERRIDE="$ROOT" \
     FM_STATE_OVERRIDE="$HOME_DIR/state" FM_DATA_OVERRIDE="$HOME_DIR/data" \
     FM_CONFIG_OVERRIDE="$HOME_DIR/config" FM_PROJECTS_OVERRIDE="$HOME_DIR/projects" \
@@ -222,7 +222,7 @@ test_origin_requires_running_server() {
   local out status
   t3_case origin
   # shellcheck disable=SC2016  # $0 is the child shell's own positional.
-  out=$(env FM_T3_ORIGIN= FM_T3_HOME="$CASE_DIR/no-t3-home" FM_HOME="$HOME_DIR" FM_ROOT_OVERRIDE="$ROOT" \
+  out=$(env FM_T3_ORIGIN= T3CODE_HOME="$CASE_DIR/no-t3-home" FM_HOME="$HOME_DIR" FM_ROOT_OVERRIDE="$ROOT" \
     bash -c '. "$0/bin/fm-backend.sh"; fm_backend_source t3; fm_backend_t3_origin' "$ROOT" 2>&1)
   status=$?
   [ "$status" -ne 0 ] || fail "origin resolution should fail without server-runtime.json"
@@ -231,7 +231,7 @@ test_origin_requires_running_server() {
   printf '{"version":1,"pid":1,"port":3773,"origin":"%s","serviceManaged":true}\n' "$ORIGIN" \
     > "$CASE_DIR/t3-home-2/userdata/server-runtime.json"
   # shellcheck disable=SC2016  # $0 is the child shell's own positional.
-  out=$(env FM_T3_ORIGIN= FM_T3_HOME="$CASE_DIR/t3-home-2" FM_HOME="$HOME_DIR" FM_ROOT_OVERRIDE="$ROOT" \
+  out=$(env FM_T3_ORIGIN= T3CODE_HOME="$CASE_DIR/t3-home-2" FM_HOME="$HOME_DIR" FM_ROOT_OVERRIDE="$ROOT" \
     bash -c '. "$0/bin/fm-backend.sh"; fm_backend_source t3; fm_backend_t3_origin' "$ROOT")
   [ "$out" = "$ORIGIN" ] || fail "origin should come from server-runtime.json, got '$out'"
   pass "fm_backend_t3_origin: reads the running server's origin and refuses loudly without one"
@@ -308,7 +308,7 @@ test_model_selection_precedence_and_harness_gate() {
   status=$?
   [ "$status" -ne 0 ] || fail "a non-claude harness must be refused"
   assert_contains "$out" "claude harness family only" "the harness refusal should name the supported family"
-  out=$(FM_T3_HOME_OVERRIDE="$CASE_DIR/empty-t3-home" t3_call fm_backend_t3_model_selection claude "" "" "" 2>&1)
+  out=$(T3CODE_HOME_OVERRIDE="$CASE_DIR/empty-t3-home" t3_call fm_backend_t3_model_selection claude "" "" "" 2>&1)
   status=$?
   [ "$status" -ne 0 ] || fail "no model from any source must be refused"
   assert_contains "$out" "--model" "the no-model refusal should name the flag that supplies one"
@@ -687,6 +687,24 @@ test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start() {
   [ -z "$(dispatch_types)" ] || fail "a refused harness must create no thread, got '$(dispatch_types)'"
   assert_absent "$HOME_DIR/state/$id.meta" "a refused spawn must publish no record"
   pass "fm-spawn.sh --backend t3: a non-claude harness is refused before any lease or thread exists"
+
+  # A Claude account pin cannot reach a T3-launched provider, so it refuses
+  # rather than record account= for a pin that did not apply. The fake claude
+  # reports the ordinary login signed in, so only the T3 conflict can refuse.
+  id=t3pinz1
+  fm_test_spawn_brief "$HOME_DIR" "$id"
+  printf 'ordinary\n' > "$HOME_DIR/config/claude-account"
+  fm_fake_exit0 "$FB" claude
+  : > "$FAKE/dispatch.log"
+  out=$(t3_env FM_SPAWN_NO_GUARD=1 "$ROOT/bin/fm-spawn.sh" "$id" "$proj" claude --mode no-mistakes --yolo off --backend t3 2>&1)
+  status=$?
+  rm -f "$HOME_DIR/config/claude-account" "$FB/claude"
+  [ "$status" -ne 0 ] || fail "a pinned Claude spawn on t3 must refuse"$'\n'"$out"
+  assert_contains "$out" "T3 Code launches the provider with its server's own login" "the refusal should name the pin conflict"
+  assert_not_contains "$(cat "$T3LOG")" $'treehouse\x1f''get' "a refused pin must lease no worktree"
+  [ -z "$(dispatch_types)" ] || fail "a refused pin must dispatch nothing, got '$(dispatch_types)'"
+  assert_absent "$HOME_DIR/state/$id.meta" "a refused pin must publish no record"
+  pass "fm-spawn.sh --backend t3: a declared Claude account pin is refused before any lease or thread exists"
 
   id=t3smz1
   subhome="$CASE_DIR/subhome"

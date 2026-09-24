@@ -852,6 +852,7 @@ An unqualified model, an undeclared provider, or a raw Pi launch command, which 
 ### Launch scope and sign-in checks
 
 When a file is present, every launch of that runner from this home uses it: ships, scouts, local secondmate agents, raw Claude launch commands, and relaunches.
+The `t3` backend launches Claude with its server's own login and cannot carry a pin, so a Claude spawn or relaunch on it refuses while `config/claude-account` is present ([`t3-backend.md`](t3-backend.md#active-limits)).
 A raw Claude launch command refuses if its leading assignments set `CLAUDE_CONFIG_DIR` or a credential that a pinned launch unsets, such as `ANTHROPIC_API_KEY`.
 The assignment would override the pin.
 The refusal names the variable; remove that assignment from the raw command, or change or remove `config/claude-account`.
@@ -2217,7 +2218,6 @@ FM_CONFIG_OVERRIDE=      # alternate config dir, mainly for tests
 FM_PROC_ROOT_OVERRIDE=   # alternate /proc root for Linux process-identity reads in fm-wake-lib.sh and fm-teardown.sh, mainly for tests
 FM_BACKEND=             # optional runtime backend override for new spawns; tmux/herdr/zellij/orca/cmux/t3 support ship/scout spawns, codex-app is not accepted
 FM_T3_ORIGIN=           # t3-only: override the T3 Code server origin instead of reading its runtime file (docs/t3-backend.md)
-FM_T3_HOME=             # t3-only: override the T3 Code home (default T3CODE_HOME, then ~/.t3) whose runtime file and model manifest are read
 FM_T3_TOKEN_TTL=1h      # t3-only: TTL of each minted bearer session; refreshed inside its last five minutes
 FM_TRACE_CONTEXT=       # optional trace-context override; see "Trace context propagation"
 FM_TASK_ID=             # internal task-worker marker fm-spawn.sh exports into ship and scout panes, never set by hand; bin/fm-test-run.sh refuses to execute in the repository primary checkout while it is set

@@ -19,7 +19,7 @@
 # `t3_project_id=<project id>`.
 #
 # Transport. Origin: `${T3CODE_HOME:-$HOME/.t3}/userdata/server-runtime.json`'s
-# `origin` (FM_T3_ORIGIN overrides it for tests; FM_T3_HOME overrides the home).
+# `origin` (FM_T3_ORIGIN overrides it for tests).
 # Reads: GET /api/orchestration/shell (projects and thread summaries) and
 # GET /api/orchestration/threads/<id> (detail; `?turnLimit=N` bounds it).
 # Writes: POST /api/orchestration/dispatch with the same typed commands the web
@@ -119,9 +119,7 @@ fm_backend_t3_tool_check() {
 }
 
 fm_backend_t3_home() {
-  if [ -n "${FM_T3_HOME:-}" ]; then
-    printf '%s' "$FM_T3_HOME"
-  elif [ -n "${T3CODE_HOME:-}" ]; then
+  if [ -n "${T3CODE_HOME:-}" ]; then
     printf '%s' "$T3CODE_HOME"
   else
     printf '%s/.t3' "${HOME:-}"
@@ -438,6 +436,15 @@ fm_backend_t3_thread_json() {  # <thread-id> [turn-limit]
   esac
   echo "error: t3 thread read failed: $(fm_backend_t3_error_reason "$out" "$FM_BACKEND_T3_HTTP_CODE")" >&2
   rm -f "$out"
+  return 1
+}
+
+# fm_backend_t3_account_pin_check <harness> <worker-account-selection>: T3 owns
+# the provider launch and runs it under its server's own login, so neither a
+# pinned CLAUDE_CONFIG_DIR nor the credential shedding can reach a T3 worker.
+fm_backend_t3_account_pin_check() {
+  [ "$1" = claude ] && [ -n "$2" ] || return 0
+  echo "error: config/claude-account pins the Claude account, but T3 Code launches the provider with its server's own login, so backend=t3 cannot honor the pin; remove config/claude-account or use another backend" >&2
   return 1
 }
 
