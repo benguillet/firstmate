@@ -94,10 +94,19 @@ case "${1:-}" in
     POOL="${FM_FAKE_TREEHOUSE_POOL:?}"
     mkdir -p "$POOL"
     n=$(( $(ls "$POOL" | wc -l | tr -d ' ') + 1 ))
-    wt="$POOL/slot-$n"
-    git worktree add --quiet --detach "$wt" >/dev/null 2>&1 || exit 1
-    # <pool>.dirty hands out a slot still holding a crashed worker's work.
-    [ ! -e "$POOL.dirty" ] || printf 'crashed worker work\n' > "$wt/uncommitted.txt"
+    if [ -e "$POOL.dirty" ]; then
+      # <pool>.dirty hands out a Treehouse-shaped pool slot still holding a
+      # crashed worker's uncommitted work and that worker's slot claim.
+      printf '{}\n' > "$POOL/treehouse-state.json"
+      mkdir -p "$POOL/slot-$n"
+      wt="$POOL/slot-$n/$(basename "$PWD")"
+      git worktree add --quiet --detach "$wt" >/dev/null 2>&1 || exit 1
+      printf 'crashed worker work\n' > "$wt/uncommitted.txt"
+      printf 'task=t3crashedz1\nhome=/elsewhere\n' > "$POOL/slot-$n/.fm-slot-owner"
+    else
+      wt="$POOL/slot-$n"
+      git worktree add --quiet --detach "$wt" >/dev/null 2>&1 || exit 1
+    fi
     printf '%s\n' "$wt"
     exit 0
     ;;
@@ -960,10 +969,13 @@ test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start() {
   [ "$status" -ne 0 ] || fail "a spawn whose thread.create fails must fail"$'\n'"$out"
   [ -z "$(dispatch_types)" ] || fail "a refused thread.create must dispatch nothing further, got '$(dispatch_types)'"
   assert_not_contains "$(cat "$T3LOG")" $'treehouse\x1f''return' "a dirty leased slot must not be returned"
-  wt=$(compgen -G "$CASE_DIR/pool/*/uncommitted.txt" | head -n 1)
+  wt=$(compgen -G "$CASE_DIR/pool/*/*/uncommitted.txt" | head -n 1)
   [ -n "$wt" ] || fail "the uncommitted file in the leased slot must survive"
   [ "$(cat "$wt")" = "crashed worker work" ] || fail "the uncommitted file in the leased slot must keep its content"
   assert_contains "$out" "worktree $(dirname "$wt") of task $id holds uncommitted or unreadable work" "the warning should name the dirty worktree"
+  assert_contains "$out" "this task's own slot claim was released" "the warning should say the aborted task's claim was released"
+  ! grep -qx "task=$id" "$(dirname "$(dirname "$wt")")/.fm-slot-owner" 2>/dev/null \
+    || fail "the aborted task must not keep its claim on a dirty slot it never recorded"
   assert_absent "$HOME_DIR/state/$id.meta" "an aborted spawn should leave no record"
   pass "fm-spawn.sh --backend t3: an abort never force-returns a leased slot holding uncommitted work"
 }
