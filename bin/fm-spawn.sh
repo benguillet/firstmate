@@ -3702,7 +3702,7 @@ EOF
       echo "error: backend=t3 launches the provider through T3 Code, so a raw launch command cannot be honored; pass a harness name (claude) instead" >&2
       exit 1
     fi
-    T3_PROJECT_ID=$(fm_backend_t3_project_ensure "$PROJ_ABS") || exit 1
+    [ -n "$T3_PROJECT_ID" ] || T3_PROJECT_ID=$(fm_backend_t3_project_ensure "$PROJ_ABS") || exit 1
     # A T3 thread is bound to its worktree at creation, so the Treehouse slot
     # is leased here, non-interactively, before the endpoint exists; every
     # other session backend types `treehouse get` into the pane it just made.

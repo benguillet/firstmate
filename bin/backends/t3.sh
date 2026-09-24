@@ -463,18 +463,73 @@ fm_backend_t3_real_path() {  # <path>
   (CDPATH='' cd -- "$1" 2>/dev/null && pwd -P) || printf '%s' "$1"
 }
 
-# fm_backend_t3_project_find: the id of the T3 project whose workspaceRoot is
-# <project-path> (compared physically); prints nothing when no project has it.
+# fm_backend_t3_repo_key: the repository key T3 itself derives from a remote
+# URL (v0.0.42 normalizeGitRemoteUrl, the repositoryIdentity.canonicalKey it
+# reports): lowercased host/owner/repo with the scheme, user, port, trailing
+# slash, and .git suffix dropped, so the scp, ssh://, and https spellings of
+# one remote compare equal.
+fm_backend_t3_repo_key() {  # <remote-url>
+  jq -rn --arg u "$1" '
+    ($u | gsub("^\\s+|\\s+$"; "") | ascii_downcase | sub("/+$"; "") | sub("\\.git$"; "")) as $n
+    | if ($n | test("^(ssh|https?|git)://")) then
+        (($n | capture("^[a-z]+://([^@/]*@)?(?<host>[^/:?#]+)(:[0-9]*)?(?<path>[^?#]*)")) // null) as $m
+        | ((($m.path // "") | split("/") | map(select(length > 0)) | join("/"))) as $p
+        | if $m != null and ($p | contains("/")) then "\($m.host)/\($p)" else $n end
+      else
+        (($n | capture("^[a-z0-9._-]+@(?<host>[^:/\\s]+):(?<path>[^/\\s]+(/[^/\\s]+)+)$")) // null) as $m
+        | if $m != null then "\($m.host)/\($m.path)" else $n end
+      end'
+}
+
+fm_backend_t3_git_repo_key() {  # <dir> -> key of its origin, empty without one
+  local url
+  url=$(git -C "$1" remote get-url origin 2>/dev/null) && [ -n "$url" ] || return 0
+  fm_backend_t3_repo_key "$url"
+}
+
+# fm_backend_t3_project_find: the id of the T3 project for <project-path>;
+# prints nothing when T3 has none. The project whose workspaceRoot is the path
+# (compared physically) wins; otherwise the repository's own project, matched
+# by origin: a firstmate clone is never the checkout the captain registered.
+# A candidate's key is its repositoryIdentity.canonicalKey, or else its
+# workspaceRoot's origin. Several matches resolve to the one titled after the
+# repository, then the oldest, and an origin match is announced on stderr.
 fm_backend_t3_project_find() {  # <project-path>
-  local project=$1 real shell
+  local project=$1 real shell id key pid ckey root title matched='' chosen
   real=$(fm_backend_t3_real_path "$project")
   shell=$(fm_backend_t3_shell) || return 1
-  printf '%s' "$shell" | jq -r --arg root "$real" --arg raw "$project" \
-    '[.projects[] | select(.workspaceRoot == $root or .workspaceRoot == $raw)] | .[0].id // empty' || :
+  id=$(printf '%s' "$shell" | jq -r --arg root "$real" --arg raw "$project" \
+    '[.projects[] | select(.workspaceRoot == $root or .workspaceRoot == $raw)] | .[0].id // empty') || id=
+  if [ -n "$id" ]; then
+    printf '%s' "$id"
+    return 0
+  fi
+  key=$(fm_backend_t3_git_repo_key "$real")
+  [ -n "$key" ] || return 0
+  while IFS=$'\037' read -r pid ckey root; do
+    [ -n "$pid" ] || continue
+    [ -n "$ckey" ] || ckey=$(fm_backend_t3_git_repo_key "$root")
+    [ "$ckey" != "$key" ] || matched="$matched$pid"$'\n'
+  done <<EOF
+$(printf '%s' "$shell" | jq -r '.projects[]
+  | [.id, (.repositoryIdentity.canonicalKey // "" | ascii_downcase), (.workspaceRoot // "")] | join("\u001f")' 2>/dev/null)
+EOF
+  [ -n "$matched" ] || return 0
+  chosen=$(printf '%s' "$shell" | jq -r --arg ids "$matched" --arg name "${key##*/}" '
+    ($ids | split("\n") | map(select(length > 0))) as $ids
+    | [.projects[] | select(.id as $i | any($ids[]; . == $i))]
+    | sort_by((if ((.title // "") | ascii_downcase) == $name then 0 else 1 end), (.createdAt // ""), .id)
+    | .[0] | [.id, (.title // ""), (.workspaceRoot // "")] | join("\u001f")') || return 1
+  IFS=$'\037' read -r id title root <<EOF
+$chosen
+EOF
+  echo "notice: T3 has no project rooted at $real; using project '$title' at $root, the T3 project for the same repository ($key)" >&2
+  printf '%s' "$id"
 }
 
 # fm_backend_t3_project_ensure: the project fm_backend_t3_project_find names,
-# registered through project.create when no project has the root. Prints the id.
+# registered through project.create when T3 has none for the repository.
+# Prints the id.
 fm_backend_t3_project_ensure() {  # <project-path>
   local project=$1 real shell id title cmd
   id=$(fm_backend_t3_project_find "$project") || return 1

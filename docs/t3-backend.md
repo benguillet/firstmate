@@ -27,7 +27,12 @@ Routine supervision does not require the GUI: `bin/fm-peek.sh <id>` renders the 
 
 ## Projects, threads, and the worktree binding
 
-The first task for a repository registers a T3 project whose workspace root is the project clone, exactly as `t3 project add` would; later tasks reuse the project that already owns that root.
+Every task's thread lands in the T3 project for its repository.
+A project whose workspace root is Firstmate's project clone is used first.
+Otherwise Firstmate uses the project T3 already has for the same repository, such as one the captain registered from their own checkout: the clone's `origin` is matched against each project's `repositoryIdentity.canonicalKey`, or against the `origin` of its workspace root when T3 reports no identity for it.
+Remotes compare the way T3 normalizes them, so `git@github.com:owner/repo.git`, `ssh://git@github.com/owner/repo`, and `https://github.com/owner/repo` name one repository.
+When several projects match, the one titled after the repository wins, then the oldest; the spawn prints a notice naming the chosen project's title and workspace root, and `t3_project_id=` records it.
+Only when T3 has no project for the repository does the first task register one rooted at the project clone, exactly as `t3 project add` would.
 No manual project registration is required.
 
 Each task leases its Treehouse worktree first, non-interactively, then creates a T3 thread with `worktreePath` set to that worktree and `branch` set to its current branch when it has one.

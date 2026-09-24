@@ -163,9 +163,12 @@ t3_call() {
   t3_env bash -c '. "$0/bin/fm-backend.sh"; fm_backend_source t3 || exit 97; "$@"' "$ROOT" "$@"
 }
 
-seed_project() {  # <id> <workspace-root> [title]
-  jq --arg id "$1" --arg root "$2" --arg t "${3:-proj}" \
-    '.projects[$id] = {id:$id,title:$t,workspaceRoot:$root,defaultModelSelection:null}' \
+seed_project() {  # <id> <workspace-root> [title] [repository-key] [created-at]
+  jq --arg id "$1" --arg root "$2" --arg t "${3:-proj}" --arg key "${4:-}" \
+    --arg at "${5:-2026-01-01T00:00:00.000Z}" '
+    .projects[$id] = ({id:$id,title:$t,workspaceRoot:$root,defaultModelSelection:null,createdAt:$at}
+      + (if $key == "" then {} else {repositoryIdentity:{canonicalKey:$key,
+          locator:{source:"git-remote",remoteName:"origin",remoteUrl:("https://" + $key)}}} end))' \
     "$FAKE/state.json" > "$FAKE/state.json.new" && mv "$FAKE/state.json.new" "$FAKE/state.json"
 }
 
@@ -288,6 +291,67 @@ test_project_ensure_matches_existing_root_or_creates() {
     || fail "project.create should carry the physical workspace root"
   [ "$(dispatch_last project.create .title)" = repo-b ] || fail "project.create should title the project by its basename"
   pass "fm_backend_t3_project_ensure: reuses the project owning the root and registers one only when none exists"
+}
+
+test_project_find_matches_the_repository_by_origin() {
+  local clone captain other out err id created
+  t3_case project-origin
+  for out in 'git@github.com:FM-T3-Test/Origin-Repo.git' 'ssh://git@github.com/fm-t3-test/origin-repo' \
+    'https://github.com/fm-t3-test/origin-repo/' 'https://user@GitHub.com:443/fm-t3-test/origin-repo.git'; do
+    [ "$(t3_call fm_backend_t3_repo_key "$out")" = github.com/fm-t3-test/origin-repo ] \
+      || fail "'$out' should normalize to T3's repository key, got '$(t3_call fm_backend_t3_repo_key "$out")'"
+  done
+  clone="$CASE_DIR/projects/origin-repo"
+  fm_git_init_commit "$clone"
+  git -C "$clone" remote add origin git@github.com:FM-T3-Test/Origin-Repo.git
+
+  # A project rooted at the clone itself wins over one that only shares the repository.
+  seed_project "$(uuid)" /nonexistent/captain/origin-repo origin-repo github.com/fm-t3-test/origin-repo
+  id=$(uuid)
+  seed_project "$id" "$(cd "$clone" && pwd -P)" firstmate-clone
+  out=$(t3_call fm_backend_t3_project_find "$clone" 2>"$CASE_DIR/err") || fail "project_find failed for a registered root"
+  [ "$out" = "$id" ] || fail "the project rooted at the clone should win, got '$out'"
+  assert_not_contains "$(cat "$CASE_DIR/err")" "notice:" "a path match should not announce an origin match"
+  pass "fm_backend_t3_project_find: the project rooted at the clone wins"
+
+  # Without it, the captain's own project for the repository is used, and said so.
+  jq --arg id "$id" 'del(.projects[$id])' "$FAKE/state.json" > "$FAKE/state.json.new" && mv "$FAKE/state.json.new" "$FAKE/state.json"
+  captain=$(jq -r '.projects[] | select(.workspaceRoot == "/nonexistent/captain/origin-repo") | .id' "$FAKE/state.json")
+  out=$(t3_call fm_backend_t3_project_ensure "$clone" 2>"$CASE_DIR/err") || fail "project_ensure failed for an origin match"
+  [ "$out" = "$captain" ] || fail "the captain's project for the same repository should be used, got '$out'"
+  [ -z "$(dispatch_types)" ] || fail "an origin match must register no second project, got '$(dispatch_types)'"
+  err=$(cat "$CASE_DIR/err")
+  assert_contains "$err" "using project 'origin-repo' at /nonexistent/captain/origin-repo" "the origin match should name the chosen project and root"
+
+  # A project T3 reports no identity for is matched through its root's own origin.
+  jq --arg id "$captain" 'del(.projects[$id])' "$FAKE/state.json" > "$FAKE/state.json.new" && mv "$FAKE/state.json.new" "$FAKE/state.json"
+  other="$CASE_DIR/captain-checkout"
+  fm_git_init_commit "$other"
+  git -C "$other" remote add origin ssh://git@github.com/fm-t3-test/origin-repo
+  id=$(uuid)
+  seed_project "$id" "$(cd "$other" && pwd -P)" checkout
+  out=$(t3_call fm_backend_t3_project_find "$clone" 2>/dev/null) || fail "project_find failed for a root-origin match"
+  [ "$out" = "$id" ] || fail "a project without repositoryIdentity should match through its root's origin, got '$out'"
+  pass "fm_backend_t3_project_find: otherwise the repository's project, by T3's normalized origin, announced on stderr"
+
+  # Several matches: the one titled after the repository, then the oldest.
+  seed_project "$(uuid)" /nonexistent/a origin-repo github.com/fm-t3-test/origin-repo 2026-05-01T00:00:00.000Z
+  created=$(uuid)
+  seed_project "$created" /nonexistent/b Origin-Repo github.com/fm-t3-test/origin-repo 2026-03-01T00:00:00.000Z
+  seed_project "$(uuid)" /nonexistent/c elsewhere github.com/fm-t3-test/origin-repo 2020-01-01T00:00:00.000Z
+  out=$(t3_call fm_backend_t3_project_find "$clone" 2>/dev/null) || fail "project_find failed for several matches"
+  [ "$out" = "$created" ] || fail "several matches should resolve to the oldest project titled after the repository, got '$out'"
+  pass "fm_backend_t3_project_find: several matches resolve to the oldest project titled after the repository"
+
+  # No project for the repository: nothing is found and ensure registers the clone.
+  git -C "$clone" remote set-url origin https://github.com/fm-t3-test/unregistered-repo
+  out=$(t3_call fm_backend_t3_project_find "$clone" 2>/dev/null) || fail "project_find failed with no match"
+  [ -z "$out" ] || fail "no project for the repository should find nothing, got '$out'"
+  : > "$FAKE/dispatch.log"
+  out=$(t3_call fm_backend_t3_project_ensure "$clone" 2>/dev/null) || fail "project_ensure failed with no match"
+  [ "$(dispatch_types)" = "project.create" ] || fail "no match should register exactly one project, got '$(dispatch_types)'"
+  [ "$(dispatch_last project.create .workspaceRoot)" = "$(cd "$clone" && pwd -P)" ] || fail "the new project should be rooted at the clone"
+  pass "fm_backend_t3_project_ensure: registers a project only when T3 has none for the repository"
 }
 
 test_model_selection_precedence_and_harness_gate() {
@@ -830,6 +894,7 @@ test_spawn_t3_relaunch_carries_model_and_keeps_thread_on_failure() {
 test_origin_requires_running_server
 test_session_is_minted_once_cached_privately_and_refreshed_on_401
 test_project_ensure_matches_existing_root_or_creates
+test_project_find_matches_the_repository_by_origin
 test_model_selection_precedence_and_harness_gate
 test_thread_create_binds_worktree_and_reads_back
 test_runtime_mode_maps_permission_flag
