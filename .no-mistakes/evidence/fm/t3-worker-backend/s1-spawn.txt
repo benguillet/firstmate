@@ -1,0 +1,12 @@
+# lab T3 server: t3 v0.0.42 serve --base-dir /tmp/fm-t3-lab-1s10/t3home --port 3791 (throwaway); FM_HOME=/tmp/fm-t3-lab-1s10/home; HOME=/tmp/fm-t3-lab-1s10/user-home
+$ GET /api/orchestration/shell (before spawn)
+{"projects":[],"threads":[]}
+
+$ bin/fm-spawn.sh t3laba1 /tmp/fm-t3-lab-1s10/proj claude --model claude-haiku-4-5 --mode local-only --yolo off --backend t3
+warning: /tmp/fm-t3-lab-1s10/home/data/t3laba1/launch-brief.md records no ship branch; defaulting to legacy branch fm/t3laba1
+warning: /tmp/fm-t3-lab-1s10/home/data/t3laba1/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode local-only - confirm its definition of done matches
+notice: t3laba1 ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+🌳 Setting up worktree...
+🌳 Leased worktree at ~/.treehouse/proj-8a2b1f/1/proj. Run 'treehouse return ~/.treehouse/proj-8a2b1f/1/proj' to release it.
+spawned t3laba1 harness=claude kind=ship mode=local-only yolo=off window=eaebbf40-bcba-4047-80f6-23b32d5a2116 worktree=/tmp/fm-t3-lab-1s10/user-home/.treehouse/proj-8a2b1f/1/proj
+exit=0

@@ -1,0 +1,32 @@
+# repo2: bare origin /tmp/fm-t3-lab-1s10/origin2.git; captain checkout /tmp/fm-t3-lab-1s10/captain2 registered in T3 as project 'repo2'; firstmate project clone /tmp/fm-t3-lab-1s10/proj2 (same origin)
+$ GET shell projects (before)
+[{"id":"c8c37542-54ed-4663-9836-4746d7121f62","title":"proj","workspaceRoot":"/tmp/fm-t3-lab-1s10/proj"},{"id":"6044dc43-6df3-440e-aeb9-41c8cfdba68e","title":"repo2","workspaceRoot":"/tmp/fm-t3-lab-1s10/captain2"}]
+$ bin/fm-spawn.sh t3labb1 /tmp/fm-t3-lab-1s10/proj2 claude --model claude-haiku-4-5 --mode local-only --yolo off --backend t3
+notice: T3 has no project rooted at /tmp/fm-t3-lab-1s10/proj2; using project 'repo2' at /tmp/fm-t3-lab-1s10/captain2, the T3 project for the same repository (/tmp/fm-t3-lab-1s10/origin2)
+notice: t3labb1 ships mode=local-only while the standing posture for proj2 is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+🌳 Setting up worktree...
+🌳 Leased worktree at ~/.treehouse/proj2-5df9d7/1/proj2. Run 'treehouse return ~/.treehouse/proj2-5df9d7/1/proj2' to release it.
+spawned t3labb1 harness=claude kind=ship mode=local-only yolo=off window=2a9ca0d9-152d-4c01-948e-a059fc3db18e worktree=/tmp/fm-t3-lab-1s10/user-home/.treehouse/proj2-5df9d7/1/proj2
+exit=0
+$ GET shell projects (after)
+[{"id":"c8c37542-54ed-4663-9836-4746d7121f62","title":"proj","workspaceRoot":"/tmp/fm-t3-lab-1s10/proj"},{"id":"6044dc43-6df3-440e-aeb9-41c8cfdba68e","title":"repo2","workspaceRoot":"/tmp/fm-t3-lab-1s10/captain2"}]
+$ GET shell threads
+[{"id":"2a9ca0d9-152d-4c01-948e-a059fc3db18e","title":"fm-t3labb1","projectId":"6044dc43-6df3-440e-aeb9-41c8cfdba68e","worktreePath":"/tmp/fm-t3-lab-1s10/user-home/.treehouse/proj2-5df9d7/1/proj2","branch":null}]
+$ grep t3_ state/t3labb1.meta
+window=2a9ca0d9-152d-4c01-948e-a059fc3db18e
+worktree=/tmp/fm-t3-lab-1s10/user-home/.treehouse/proj2-5df9d7/1/proj2
+backend=t3
+t3_thread_id=2a9ca0d9-152d-4c01-948e-a059fc3db18e
+t3_project_id=6044dc43-6df3-440e-aeb9-41c8cfdba68e
+$ cat state/t3labb1.status
+done [at=1790221550]: ready in branch fm/t3labb1
+$ git -C <leased worktree> log --oneline -2; branch
+6f7fba3 lab: add LAB.md
+fafb6b8 repo2
+fm/t3labb1
+$ cat <leased worktree>/LAB.md
+hello from the t3 lab$ primary clone /tmp/fm-t3-lab-1s10/proj2 untouched: git status --short / ls
+README.md
+README.md
+$ bin/fm-crew-state.sh t3labb1
+state: done · source: status-log · ready in branch fm/t3labb1

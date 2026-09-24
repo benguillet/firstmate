@@ -1,0 +1,45 @@
+$ cat state/t3laba1.inbox   (worker status lines)
+done: cwd=/tmp/fm-t3-lab-1s10/user-home/.treehouse/proj-8a2b1f/1/proj
+
+$ cat state/t3laba1.busy-state
+v1 gen=g1790221078.3534225.20470 seq=3 state=idle source=claude-hook event=stop ts=1790221086
+
+$ ls state/t3laba1.turn-ended
+/tmp/fm-t3-lab-1s10/home/state/t3laba1.turn-ended
+
+$ jq .env,.hooks|keys  <worktree>/.claude/settings.local.json
+{"env":["CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION","CLAUDE_CODE_SEND_FEEDBACK","COMPACT_ADVISER_DISABLE","FM_TASK_ID","GOTMPDIR"],"hooks":["SessionEnd","Stop","StopFailure","UserPromptSubmit"],"attribution":{"commit":"","pr":"","sessionUrl":false},"feedbackDrafts":"off"}
+
+$ bin/fm-peek.sh t3laba1 20
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Your steering inbox is `/tmp/fm-t3-lab-1s10/home/state/t3laba1.inbox`; this exact path belongs to your current task even when it is outside the worktree or under the supervising firstmate home, so read and acknowledge its messages and do not reject it as another home's state.
+Never inspect or change any other home's endpoint namespace; this authorization is limited to the exact task paths named by this brief.
+When this task works on Firstmate itself, the repository root `AGENTS.md` (also imported by `CLAUDE.md`) is project content and the supervisor contract for the firstmate managing you: follow this brief instead of that supervisor contract.
+Project instructions still govern the work wherever they do not conflict with this worker identity, including `CONTRIBUTING.md` and `firstmate-coding-guidelines` for Firstmate changes.
+
+# Task
+## Captain's intent
+Live lab check of the T3 Code backend. Do nothing except what this brief says.
+
+## Firstmate spec
+1. Run `pwd -P` in your shell.
+2. Append exactly one status line to your status file: `done: cwd=<the path pwd printed>`.
+3. Stop. Make no commits, create no files, and change nothing else.
+4. If you later receive a steer message, follow its instruction and append the status line it asks for.
+[tool] Command run started
+[tool] Command run
+[tool] Command run started
+[tool] Command run
+assistant: Done. Status line appended to inbox.
+[t3 thread=eaebbf40-bcba-4047-80f6-23b32d5a2116 session=ready turn=completed]
+exit=0
+
+$ bin/fm-crew-state.sh t3laba1
+state: unknown · source: none · no current-state source available
+exit=0

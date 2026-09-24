@@ -1,0 +1,20 @@
+# typed-path send (a slash command) to live T3 task t3labc1; lab fault proxy on :3792 forwards to the real lab server and fails thread reads for 20s after an accepted thread.turn.start
+$ bin/fm-send.sh t3labc1 '/fm-lab-noop-direct'   (direct to the lab server)
+exit=0
+   -> message present in T3 transcript: 1
+$ FM_T3_ORIGIN=http://127.0.0.1:3792 bin/fm-send.sh t3labc1 '/fm-lab-noop-proxied'   (this change, 3f730b9)
+fm-send: text delivered to f2e57f24-a825-40c0-b0d6-394fba2c442f but submission is unconfirmed (verdict=pending; tried meta=/tmp/fm-t3-lab-1s10/home/state/t3labc1.meta; backend=from-meta); do not retype or blindly resend - verify with fm-peek.sh, then re-send '--key Enter' only if the composer still holds the text
+exit=3
+   proxy log:
+     03:48:35 GET /api/orchestration/threads/f2e57f24-a825-40c0-b0d6-394fba2c442f?turnLimit=1  -> 200
+     03:48:35 POST /api/orchestration/dispatch thread.turn.start -> 200
+     03:48:35 GET /api/orchestration/threads/f2e57f24-a825-40c0-b0d6-394fba2c442f -> 503 (injected)
+   -> message present in T3 transcript: 1
+$ FM_T3_ORIGIN=http://127.0.0.1:3792 <tree of 1d372d9>/bin/fm-send.sh t3labc1 '/fm-lab-noop-proxied-old'   (pre-fix code, for comparison)
+error: text not submitted to f2e57f24-a825-40c0-b0d6-394fba2c442f (delivery unconfirmed; verdict=pending-unproven; tried meta=/tmp/fm-t3-lab-1s10/home/state/t3labc1.meta; backend=from-meta)
+exit=1
+   proxy log:
+     03:49:01 GET /api/orchestration/threads/f2e57f24-a825-40c0-b0d6-394fba2c442f?turnLimit=1  -> 200
+     03:49:01 POST /api/orchestration/dispatch thread.turn.start -> 200
+     03:49:01 GET /api/orchestration/threads/f2e57f24-a825-40c0-b0d6-394fba2c442f -> 503 (injected)
+   -> message present in T3 transcript: 1

@@ -1,0 +1,24 @@
+$ grep spawn_gen state/t3laba1.meta (before)
+spawn_gen=s1790221078.3529574.2597
+$ bin/fm-control.sh t3laba1 relaunch --note '<status file path>'
+warning: /tmp/fm-t3-lab-1s10/home/data/t3laba1/launch-brief.md records no ship branch; defaulting to legacy branch fm/t3laba1
+warning: /tmp/fm-t3-lab-1s10/home/data/t3laba1/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode local-only - confirm its definition of done matches
+notice: t3laba1 ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+relaunched t3laba1 harness=claude from=claude model=claude-haiku-4-5 effort=default backend=t3 endpoint=eaebbf40-bcba-4047-80f6-23b32d5a2116 worktree=/tmp/fm-t3-lab-1s10/user-home/.treehouse/proj-8a2b1f/1/proj
+exit=0
+$ grep spawn_gen state/t3laba1.meta (after)
+spawn_gen=s1790221356.394808.6442
+$ (after relaunch turn) T3 session: ready
+$ cat state/t3laba1.status
+working: steer received
+error: sleep45 blocked by system constraint, message moved to handled
+$ T3 thread message count + last user message head
+messages=10 threadStill=eaebbf40-bcba-4047-80f6-23b32d5a2116
+⁣FIRSTMATE_OP: v1 launch-brief: # Current worker role contract You are a crewmate: an autonomous worker agent managed by
+$ bin/fm-control.sh t3laba1 exit
+stopped t3laba1 harness=claude backend=t3 endpoint=eaebbf40-bcba-4047-80f6-23b32d5a2116 worktree=/tmp/fm-t3-lab-1s10/user-home/.treehouse/proj-8a2b1f/1/proj
+exit=0
+$ T3 session after exit: stopped; claude provider procs in worktree: 0
+$ bin/fm-control.sh t3laba1 exit   (again)
+already-stopped t3laba1 harness=claude backend=t3 endpoint=eaebbf40-bcba-4047-80f6-23b32d5a2116 worktree=/tmp/fm-t3-lab-1s10/user-home/.treehouse/proj-8a2b1f/1/proj
+exit=0

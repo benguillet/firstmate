@@ -1,0 +1,21 @@
+$ bin/fm-send.sh t3laba1 '<steer>'
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+exit=0
+$ ls state/t3laba1.inbox/handled/
+001.msg
+$ cat state/t3laba1.inbox/handled/001.msg
+schema=fm-task-inbox.v1
+at=2026-09-24T03:39:55Z
+--
+Steer from firstmate: run exactly this shell command, then stop: echo 'working: steer received' >> /tmp/fm-t3-lab-1s10/home/state/t3laba1.status
+$ cat state/t3laba1.status
+working: steer received
+
+$ T3 thread messages (role: first 160 chars)
+user: ⁣FIRSTMATE_OP: v1 launch-brief: # Current worker role contract You are a crewmate: an autonomous worker agent managed by firstmate. This section establishes you
+assistant: Done. Status line appended to inbox.
+user: : Firstmate instruction waiting: list '/tmp/fm-t3-lab-1s10/home/state/t3laba1.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled fil
+assistant: Handled. Message 001 processed and moved to handled/.
+
+$ bin/fm-crew-state.sh t3laba1
+state: working · source: status-log · steer received

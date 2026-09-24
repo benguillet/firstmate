@@ -1,0 +1,33 @@
+# each spawn below must refuse before any lease or thread exists
+
+   -> threads in lab T3: 0; lease: available ; meta: 0
+$ bin/fm-spawn.sh t3labg1 /tmp/fm-t3-lab-1s10/proj codex --mode local-only --yolo off --backend t3   (non-claude harness)
+error: backend=t3 supports the claude harness family only (got 'codex'); T3 owns the provider command line, and only claude's settings-file wiring is verified to load through it
+exit=1
+
+   -> threads in lab T3: 0; lease: available ; meta: 0
+$ printf 'ordinary
+' > config/claude-account; bin/fm-spawn.sh t3labg2 /tmp/fm-t3-lab-1s10/proj claude --mode local-only --yolo off --backend t3   (Claude account pin)
+error: config/claude-account pins Claude workers to the ordinary account, which is not signed in (claude auth status); sign in with env -u CLAUDE_CONFIG_DIR claude, then /login, or change the pin
+exit=1
+
+   -> threads in lab T3: 0; lease: available ; meta: 0
+$ FM_T3_ORIGIN=http://127.0.0.1:3799 bin/fm-spawn.sh t3labg3 /tmp/fm-t3-lab-1s10/proj claude ... --backend t3   (no reachable server)
+error: backend=t3 could not reach http://127.0.0.1:3799/api/orchestration/shell (connection failed or timed out after 15s)
+error: t3 shell snapshot failed: HTTP 000
+error: backend=t3 requires a reachable, owner-authenticated T3 Code server; the shell snapshot read failed
+exit=1
+
+   -> threads in lab T3: 0; lease: available ; meta: 0
+$ bin/fm-spawn.sh t3labg4 /tmp/fm-t3-lab-1s10/sub-home claude --backend t3 --secondmate
+error: backend=t3 does not support --secondmate spawns; a secondmate is a firstmate primary whose supervision protocol has no T3 shape yet
+exit=1
+
+   -> threads in lab T3: 0; lease: available ; meta: 0
+
+## account pin again, with a claude stub (exit 0) on PATH so the generic 'claude auth status' sign-in check passes and only the T3 conflict can refuse
+$ printf 'ordinary
+' > config/claude-account; PATH=<claude-stub>:$PATH bin/fm-spawn.sh t3labg2 /tmp/fm-t3-lab-1s10/proj claude --mode local-only --yolo off --backend t3
+error: config/claude-account pins the Claude account, but T3 Code launches the provider with its server's own login, so backend=t3 cannot honor the pin; remove config/claude-account or use another backend
+exit=1
+   -> threads in lab T3: 0; lease: available ; meta files: 0

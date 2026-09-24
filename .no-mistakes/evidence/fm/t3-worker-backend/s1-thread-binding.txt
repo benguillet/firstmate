@@ -1,0 +1,82 @@
+$ cat state/t3laba1.meta
+window=eaebbf40-bcba-4047-80f6-23b32d5a2116
+endpoint_task_id=t3laba1
+worktree=/tmp/fm-t3-lab-1s10/user-home/.treehouse/proj-8a2b1f/1/proj
+project=/tmp/fm-t3-lab-1s10/proj
+harness=claude
+kind=ship
+mode=local-only
+yolo=off
+branch=fm/t3laba1
+tasktmp=/tmp/fm-t3laba1
+model=claude-haiku-4-5
+effort=default
+busy_gen=g1790221078.3534225.20470
+spawn_gen=s1790221078.3529574.2597
+backend=t3
+t3_thread_id=eaebbf40-bcba-4047-80f6-23b32d5a2116
+t3_project_id=c8c37542-54ed-4663-9836-4746d7121f62
+
+$ GET /api/orchestration/shell
+{
+  "projects": [
+    {
+      "id": "c8c37542-54ed-4663-9836-4746d7121f62",
+      "title": "proj",
+      "workspaceRoot": "/tmp/fm-t3-lab-1s10/proj"
+    }
+  ],
+  "threads": [
+    {
+      "id": "eaebbf40-bcba-4047-80f6-23b32d5a2116",
+      "title": "fm-t3laba1",
+      "projectId": "c8c37542-54ed-4663-9836-4746d7121f62",
+      "worktreePath": "/tmp/fm-t3-lab-1s10/user-home/.treehouse/proj-8a2b1f/1/proj",
+      "branch": null
+    }
+  ]
+}
+$ GET /api/orchestration/threads/eaebbf40-bcba-4047-80f6-23b32d5a2116 (summary)
+jq: error (at <stdin>:1): Cannot iterate over null (null)
+$ provider process for this thread (cwd via /proc)
+pid=3536178 cwd=/tmp/fm-t3-lab-1s10/user-home/.treehouse/proj-8a2b1f/1/proj
+claude --output-format stream-json --verbose --input-format stream-json --model claude-haiku-4-5 --permission-prompt-tool stdio --mcp-config {"mcpServers":{"t3-code":{"type":"http","url":"http://127.0.0.1:3791/mcp","headers":{"Authorization":"Bearer <redacted>"}}}} --setting-sources=user,project,local --permission-mode bypassPermissions --allow-dangerously-skip-per
+
+$ status file
+home-summary.json
+t3laba1.busy-gen
+t3laba1.busy-state
+t3laba1.inbox
+t3laba1.meta
+t3laba1.turn-ended
+$ GET /api/orchestration/threads/eaebbf40-bcba-4047-80f6-23b32d5a2116 (summary)
+{
+  "id": "eaebbf40-bcba-4047-80f6-23b32d5a2116",
+  "title": "fm-t3laba1",
+  "projectId": "c8c37542-54ed-4663-9836-4746d7121f62",
+  "worktreePath": "/tmp/fm-t3-lab-1s10/user-home/.treehouse/proj-8a2b1f/1/proj",
+  "branch": null,
+  "runtimeMode": "full-access",
+  "modelSelection": {
+    "instanceId": "claudeAgent",
+    "model": "claude-haiku-4-5"
+  },
+  "session": {
+    "status": "ready",
+    "providerName": "claudeAgent",
+    "runtimeMode": "full-access"
+  },
+  "latestTurn": {
+    "state": "completed"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "text": "⁣FIRSTMATE_OP: v1 launch-brief: # Current worker role contract\nYou are a crewmate: an autonomous worker agent managed by firstmate.\nThis section establishes your current identity before every project or task instruction below and supersedes any conflicting role identity in those instructions.\nDo the"
+    },
+    {
+      "role": "assistant",
+      "text": "Done. Status line appended to inbox."
+    }
+  ]
+}

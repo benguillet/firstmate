@@ -1,0 +1,26 @@
+# spawn whose thread.create T3 accepts but whose read-back and every later thread read fail (lab fault proxy answers GET threads/* with 503 for 120s after thread.create)
+$ FM_T3_ORIGIN=http://127.0.0.1:3792 bin/fm-spawn.sh t3labe1 /tmp/fm-t3-lab-1s10/proj claude --model claude-haiku-4-5 --mode local-only --yolo off --backend t3
+notice: t3labe1 ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+🌳 Setting up worktree...
+🌳 Leased worktree at ~/.treehouse/proj-8a2b1f/1/proj. Run 'treehouse return ~/.treehouse/proj-8a2b1f/1/proj' to release it.
+error: t3 thread read failed: HTTP 503
+error: t3 thread.create was accepted but thread 9dce4990-df5e-4c39-979f-327463f383ba could not be read back
+warning: T3 thread 9dce4990-df5e-4c39-979f-327463f383ba could not be proven closed after the aborted spawn of t3labe1; its leased Treehouse worktree /tmp/fm-t3-lab-1s10/user-home/.treehouse/proj-8a2b1f/1/proj and this task's slot claim were left in place for a person to reconcile
+exit=1
+$ proxy log
+   03:50:56 GET /api/orchestration/shell  -> 200
+   03:50:56 GET /api/orchestration/shell  -> 200
+   03:50:56 POST /api/orchestration/dispatch thread.create -> 200
+   03:50:56 GET /api/orchestration/threads/9dce4990-df5e-4c39-979f-327463f383ba -> 503 (injected)
+   03:50:56 GET /api/orchestration/threads/9dce4990-df5e-4c39-979f-327463f383ba?turnLimit=1 -> 503 (injected)
+$ treehouse calls (logging wrapper)
+03:50:56.542 treehouse get --lease --lease-holder fm-t3labe1
+$ real lab server: threads in shell
+[{"id":"9dce4990-df5e-4c39-979f-327463f383ba","title":"fm-t3labe1","worktreePath":"/tmp/fm-t3-lab-1s10/user-home/.treehouse/proj-8a2b1f/1/proj"}]
+$ state/t3labe1.meta exists?
+ls: cannot access '/tmp/fm-t3-lab-1s10/home/state/t3labe1.meta': No such file or directory
+$ treehouse status (in /tmp/fm-t3-lab-1s10/proj)
+1     leased       ~/.treehouse/proj-8a2b1f/1/proj  (held by fm-t3labe1)
+$ cat <slot>/.fm-slot-owner
+task=t3labe1
+home=/tmp/fm-t3-lab-1s10/home

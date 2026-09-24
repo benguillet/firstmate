@@ -1,0 +1,18 @@
+# comparison only: the PRE-FIX teardown (tree of 1d372d9) with the lab T3 server stopped
+$ <tree of 1d372d9>/bin/fm-teardown.sh t3labc1 --force
+🌳 Worktree returned to pool.
+error: t3 thread f2e57f24-a825-40c0-b0d6-394fba2c442f could not be read, so its close was not attempted
+error: the t3 endpoint f2e57f24-a825-40c0-b0d6-394fba2c442f for t3labc1 could not be closed, so it may still be live.
+error: --force authorizes continuing past a close that failed, so this cleanup proceeds toward removing the task's records; reconcile f2e57f24-a825-40c0-b0d6-394fba2c442f yourself, because nothing here can still be relied on to name it.
+teardown t3labc1 complete (window f2e57f24-a825-40c0-b0d6-394fba2c442f, worktree /tmp/fm-t3-lab-1s10/user-home/.treehouse/proj-8a2b1f/1/proj)
+Backlog: t3labc1 just finished (this home keeps no markdown backlog at /tmp/fm-t3-lab-1s10/home/data/backlog.md). Update /tmp/fm-t3-lab-1s10/home/data/backlog.md - move t3labc1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+exit=0
+$ treehouse calls made by the pre-fix teardown
+03:49:37.863 treehouse return --force /tmp/fm-t3-lab-1s10/user-home/.treehouse/proj-8a2b1f/1/proj   [T3 GET thread f2e57f24-a825-40c0-b0d6-394fba2c442f -> HTTP 000]
+$ state/t3labc1.meta exists?
+ls: cannot access '/tmp/fm-t3-lab-1s10/home/state/t3labc1.meta': No such file or directory
+$ treehouse status (in /tmp/fm-t3-lab-1s10/proj)
+1     available    ~/.treehouse/proj-8a2b1f/1/proj
+$ (lab T3 server restarted) GET thread f2e57f24-a825-40c0-b0d6-394fba2c442f
+{"id":"f2e57f24-a825-40c0-b0d6-394fba2c442f","title":"fm-t3labc1","archivedAt":null,"worktreePath":"/tmp/fm-t3-lab-1s10/user-home/.treehouse/proj-8a2b1f/1/proj"}
+   -> the thread is still open and still bound to the slot the pre-fix teardown already returned to the pool

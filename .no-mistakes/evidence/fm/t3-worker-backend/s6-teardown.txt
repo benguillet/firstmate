@@ -1,0 +1,41 @@
+$ t3 auth session list (lab home, before teardown)
+1f5693d5-361d-4dbb-a435-06ca2dd4ded8
+  scopes: orchestration:read orchestration:operate terminal:operate review:write relay:read access:read access:write relay:write
+  method: bearer-access-token
+  subject: cli-issued-session
+  client: firstmate:/tmp/fm-t3-lab-1s10/home | bot
+  issued: 2026-09-24T03:37:58.123Z
+  last connected: never
+  expires: 2026-09-24T04:37:58.123Z
+
+486d4cd3-34ba-4214-85b8-d5595483c440
+  scopes: orchestration:read orchestration:operate terminal:operate review:write relay:read access:read access:write relay:write
+  method: bearer-access-token
+  subject: cli-issued-session
+  client: lab-observer | bot
+  issued: 2026-09-24T03:37:52.152Z
+  last connected: never
+  expires: 2026-09-24T06:37:52.152Z
+
+$ GET thread (before): HTTP 200
+$ bin/fm-teardown.sh t3laba1
+🌳 Worktree returned to pool.
+teardown t3laba1 complete (window eaebbf40-bcba-4047-80f6-23b32d5a2116, worktree /tmp/fm-t3-lab-1s10/user-home/.treehouse/proj-8a2b1f/1/proj)
+Backlog: t3laba1 just finished (this home keeps no markdown backlog at /tmp/fm-t3-lab-1s10/home/data/backlog.md). Update /tmp/fm-t3-lab-1s10/home/data/backlog.md - move t3laba1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+exit=0
+$ treehouse calls made by teardown (logging wrapper; T3 thread status sampled at the moment 'return' ran)
+03:45:00.228 treehouse return --force /tmp/fm-t3-lab-1s10/user-home/.treehouse/proj-8a2b1f/1/proj   [T3 GET thread eaebbf40-bcba-4047-80f6-23b32d5a2116 -> HTTP 404]
+$ GET thread (after): 
+{"_tag":"EnvironmentResourceNotFoundError","code":"not_found","reason":"thread_not_found","traceId":"672559af2a48578cb5ee6c19cf65fc68"}
+HTTP 404
+$ GET shell threads (after)
+[]
+$ ls state/t3laba1.* state/.t3-session*
+terminal-outcomes
+home-summary.json
+$ treehouse status (in /tmp/fm-t3-lab-1s10/proj)
+1     available    ~/.treehouse/proj-8a2b1f/1/proj
+$ t3 auth session list (after)
+486d4cd3-34ba-4214-85b8-d5595483c440
+  client: lab-observer | bot
+$ T3 server log lines for archive/stop of this thread

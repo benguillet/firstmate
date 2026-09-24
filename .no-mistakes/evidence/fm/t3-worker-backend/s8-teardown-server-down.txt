@@ -1,0 +1,34 @@
+$ (lab T3 server stopped: kill <t3 serve pid>) curl origin -> 000
+$ bin/fm-teardown.sh t3labb1 --force
+error: t3 thread 2a9ca0d9-152d-4c01-948e-a059fc3db18e could not be read, so its close was not attempted
+error: the t3 endpoint 2a9ca0d9-152d-4c01-948e-a059fc3db18e for t3labb1 could not be closed, so it may still be live.
+error: stopping this cleanup without removing the task's records, so the record naming 2a9ca0d9-152d-4c01-948e-a059fc3db18e is still here to reconcile from.
+error: that retention is not durable across a session start: if this task carries a backlog transition, the next session replays its pending close and removes the retained record, so reconcile the surviving endpoint yourself rather than trusting the retention.
+exit=1
+$ treehouse calls made by teardown (logging wrapper)
+(end of calls)
+$ ls state/t3labb1.meta; grep t3_thread_id
+/tmp/fm-t3-lab-1s10/home/state/t3labb1.meta
+t3_thread_id=2a9ca0d9-152d-4c01-948e-a059fc3db18e
+$ treehouse status (in /tmp/fm-t3-lab-1s10/proj2)
+1     leased       ~/.treehouse/proj2-5df9d7/1/proj2  (held by fm-t3labb1)
+$ leased worktree commit still present
+6f7fba3 lab: add LAB.md
+
+## lab T3 server restarted (same base dir and port); the thread still reads HTTP 200
+$ bin/fm-teardown.sh t3labb1 --force
+🌳 Worktree returned to pool.
+teardown t3labb1 complete (window 2a9ca0d9-152d-4c01-948e-a059fc3db18e, worktree /tmp/fm-t3-lab-1s10/user-home/.treehouse/proj2-5df9d7/1/proj2)
+Backlog: t3labb1 just finished (this home keeps no markdown backlog at /tmp/fm-t3-lab-1s10/home/data/backlog.md). Update /tmp/fm-t3-lab-1s10/home/data/backlog.md - move t3labb1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+exit=0
+$ treehouse calls made by teardown (logging wrapper; T3 thread status sampled at the moment 'return' ran)
+03:46:42.808 treehouse return --force /tmp/fm-t3-lab-1s10/user-home/.treehouse/proj2-5df9d7/1/proj2   [T3 GET thread 2a9ca0d9-152d-4c01-948e-a059fc3db18e -> HTTP 404]
+$ GET thread (after)
+{"_tag":"EnvironmentResourceNotFoundError","code":"not_found","reason":"thread_not_found","traceId":"817cd3a3c6cf48ce2cac6cd127762585"}
+HTTP 404
+$ state/t3labb1.meta exists?
+ls: cannot access '/tmp/fm-t3-lab-1s10/home/state/t3labb1.meta': No such file or directory
+$ treehouse status (in /tmp/fm-t3-lab-1s10/proj2)
+1     available    ~/.treehouse/proj2-5df9d7/1/proj2
+$ t3 auth session list
+  client: lab-observer | bot

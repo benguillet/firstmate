@@ -1,0 +1,38 @@
+$ bin/fm-send.sh t3laba1 '<run sleep 90 then append a line>'
+exit=0
+$ (before interrupt) T3 session status: ready; busy-state: v1 gen=g1790221078.3534225.20470 seq=7 state=idle source=claude-hook event=stop ts=1790221251
+$ bin/fm-peek.sh t3laba1 6
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+[tool] Command run started
+[tool] Command run
+[tool] Command run started
+[tool] Command run
+assistant: Handled. Message 002 processed (command running in background) and moved to handled/.
+[t3 thread=eaebbf40-bcba-4047-80f6-23b32d5a2116 session=ready turn=completed]
+$ bin/fm-crew-state.sh t3laba1
+state: working · source: status-log · steer received
+$ bin/fm-control.sh t3laba1 interrupt
+interrupt-delivered t3laba1 harness=claude backend=t3 verified=endpoint cancel=unconfirmed
+exit=0
+
+## retry with a foreground sleep
+$ T3 session status after first interrupt: stopped
+$ bin/fm-send.sh t3laba1 '<foreground sleep 45>'
+$ (before interrupt) sleep 45 process count: 0; T3 session: {"status":"running","activeTurnId":"09dd930d-231f-457a-b404-4209df9114a1"}; busy-state: v1 gen=g1790221078.3534225.20470 seq=9 state=busy source=claude-hook event=user-prompt-submit ts=1790221276
+$ bin/fm-crew-state.sh t3laba1
+state: working · source: pane · harness busy (claude-hook)
+$ bin/fm-control.sh t3laba1 interrupt
+interrupt-delivered t3laba1 harness=claude backend=t3 verified=endpoint cancel=unconfirmed
+exit=0
+$ (6s after interrupt) sleep 45 process count: 0; T3 session: {"status":"stopped","activeTurnId":null}; busy-state: v1 gen=g1790221078.3534225.20470 seq=10 state=idle source=claude-hook event=session-end ts=1790221281
+$ (56s after interrupt) cat state/t3laba1.status
+working: steer received
+$ bin/fm-peek.sh t3laba1 8
+[tool] Command run started
+[tool] Command run
+assistant: Handled. Message 002 processed (command running in background) and moved to handled/.
+user: : Firstmate instruction waiting: list '/tmp/fm-t3-lab-1s10/home/state/t3laba1.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-t3-lab-1s10/home/state/t3laba1.inbox'/handled/.
+[tool] Command run started
+[tool] Command run
+[tool] Command run
+[t3 thread=eaebbf40-bcba-4047-80f6-23b32d5a2116 session=stopped turn=completed]
