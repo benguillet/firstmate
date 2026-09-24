@@ -4152,7 +4152,7 @@ t3_launch_deliver() {
     return 1
   }
   SPAWN_LAUNCH_SENT=1
-  fm_backend_t3_turn_start "$T" "$brief_text" "$model_sel" >/dev/null || {
+  fm_backend_t3_turn_start "$T" "$brief_text" "$(fm_backend_t3_runtime_mode "$CLAUDE_PERM_FLAG")" "$model_sel" >/dev/null || {
     t3_spawn_fail "the launch brief could not be sent to T3 thread $T"
     return 1
   }
@@ -4164,7 +4164,9 @@ t3_launch_deliver() {
 
 # A T3 launch that never started is closed here, in the rovo/kimi shape. On a
 # fresh spawn the record's rollback in the abort trap removes what named the
-# thread, so the thread is archived and the leased slot returned. A relaunch
+# thread, so the thread is archived and, once that close is proven, the leased
+# slot returned under the Treehouse project lock every slot return and claim
+# release holds; the claim is released only after the return. A relaunch
 # keeps its record, thread, and worktree - the work they hold is exactly what a
 # relaunch preserves, and an archived thread could never be relaunched again -
 # so it only stops whatever session the brief turn started.
@@ -4175,14 +4177,27 @@ t3_spawn_fail() {  # <detail>
     fm_backend_t3_session_stop "$T" 2>/dev/null || true
     return 0
   fi
-  fm_backend_kill t3 "$T" 2>/dev/null || true
-  if [ -n "$T3_LEASED_WT" ]; then
-    (cd "$PROJ_ABS" && treehouse return --force "$T3_LEASED_WT") >/dev/null 2>&1 ||
-      echo "warning: could not return the leased Treehouse worktree $T3_LEASED_WT after the failed T3 launch of $ID" >&2
-    if [ "$SPAWN_SLOT_CLAIMED" = 1 ]; then
-      fm_treehouse_slot_owner_release "$T3_LEASED_WT" "$ID" || true
-      SPAWN_SLOT_CLAIMED=0
-    fi
+  if ! fm_backend_kill t3 "$T" 2>/dev/null; then
+    echo "warning: T3 thread $T could not be proven closed after the failed launch of $ID; leaving its leased Treehouse worktree $T3_LEASED_WT and slot claim in place" >&2
+    SPAWN_SLOT_CLAIMED=0
+    return 0
+  fi
+  [ -n "$T3_LEASED_WT" ] || return 0
+  if ! SPAWN_TREEHOUSE_PROJECT_LOCK=$(fm_treehouse_project_lock_path "$PROJ_ABS"); then
+    echo "warning: could not resolve the Treehouse project lock for $PROJ_ABS; leaving the leased worktree $T3_LEASED_WT of closed T3 thread $T and its slot claim in place" >&2
+    SPAWN_SLOT_CLAIMED=0
+    return 0
+  fi
+  fm_lock_acquire_wait "$SPAWN_TREEHOUSE_PROJECT_LOCK"
+  SPAWN_TREEHOUSE_PROJECT_LOCK_HELD=1
+  if ! (cd "$PROJ_ABS" && treehouse return --force "$T3_LEASED_WT") >/dev/null 2>&1; then
+    echo "warning: could not return the leased Treehouse worktree $T3_LEASED_WT of closed T3 thread $T after the failed launch of $ID; leaving its slot claim in place" >&2
+    SPAWN_SLOT_CLAIMED=0
+    return 0
+  fi
+  if [ "$SPAWN_SLOT_CLAIMED" = 1 ]; then
+    fm_treehouse_slot_owner_release "$T3_LEASED_WT" "$ID" || true
+    SPAWN_SLOT_CLAIMED=0
   fi
 }
 

@@ -463,11 +463,10 @@ fm_backend_t3_real_path() {  # <path>
   (CDPATH='' cd -- "$1" 2>/dev/null && pwd -P) || printf '%s' "$1"
 }
 
-# fm_backend_t3_repo_key: the repository key T3 itself derives from a remote
-# URL (v0.0.42 normalizeGitRemoteUrl, the repositoryIdentity.canonicalKey it
-# reports): lowercased host/owner/repo with the scheme, user, port, trailing
-# slash, and .git suffix dropped, so the scp, ssh://, and https spellings of
-# one remote compare equal.
+# fm_backend_t3_repo_key: a remote URL normalized the way T3 itself normalizes
+# one (v0.0.42 normalizeGitRemoteUrl): lowercased host/owner/repo with the
+# scheme, user, port, trailing slash, and .git suffix dropped, so the scp,
+# ssh://, and https spellings of one remote compare equal.
 fm_backend_t3_repo_key() {  # <remote-url>
   jq -rn --arg u "$1" '
     ($u | gsub("^\\s+|\\s+$"; "") | ascii_downcase | sub("/+$"; "") | sub("\\.git$"; "")) as $n
@@ -490,12 +489,15 @@ fm_backend_t3_git_repo_key() {  # <dir> -> key of its origin, empty without one
 # fm_backend_t3_project_find: the id of the T3 project for <project-path>;
 # prints nothing when T3 has none. The project whose workspaceRoot is the path
 # (compared physically) wins; otherwise the repository's own project, matched
-# by origin: a firstmate clone is never the checkout the captain registered.
-# A candidate's key is its repositoryIdentity.canonicalKey, or else its
-# workspaceRoot's origin. Several matches resolve to the one titled after the
-# repository, then the oldest, and an origin match is announced on stderr.
+# by normalized origin URL: a firstmate clone is never the checkout the captain
+# registered. A candidate's origin is read from its workspaceRoot; only an
+# unreadable root falls back to repositoryIdentity, and only when its locator
+# names the origin remote, because T3 builds that identity from `upstream`
+# first (v0.0.42 pickPrimaryRemote), so its canonicalKey is not an origin.
+# Several matches resolve to the one titled after the repository, then the
+# oldest, and an origin match is announced on stderr.
 fm_backend_t3_project_find() {  # <project-path>
-  local project=$1 real shell id key pid ckey root title matched='' chosen
+  local project=$1 real shell id key pid remote url ckey root title matched='' chosen
   real=$(fm_backend_t3_real_path "$project")
   shell=$(fm_backend_t3_shell) || return 1
   id=$(printf '%s' "$shell" | jq -r --arg root "$real" --arg raw "$project" \
@@ -506,13 +508,19 @@ fm_backend_t3_project_find() {  # <project-path>
   fi
   key=$(fm_backend_t3_git_repo_key "$real")
   [ -n "$key" ] || return 0
-  while IFS=$'\037' read -r pid ckey root; do
+  while IFS=$'\037' read -r pid remote url root; do
     [ -n "$pid" ] || continue
-    [ -n "$ckey" ] || ckey=$(fm_backend_t3_git_repo_key "$root")
+    ckey=
+    if [ -d "$root" ] && [ -r "$root" ]; then
+      ckey=$(fm_backend_t3_git_repo_key "$root")
+    elif [ "$remote" = origin ] && [ -n "$url" ]; then
+      ckey=$(fm_backend_t3_repo_key "$url")
+    fi
     [ "$ckey" != "$key" ] || matched="$matched$pid"$'\n'
   done <<EOF
 $(printf '%s' "$shell" | jq -r '.projects[]
-  | [.id, (.repositoryIdentity.canonicalKey // "" | ascii_downcase), (.workspaceRoot // "")] | join("\u001f")' 2>/dev/null)
+  | [.id, (.repositoryIdentity.locator.remoteName // ""), (.repositoryIdentity.locator.remoteUrl // ""),
+     (.workspaceRoot // "")] | join("\u001f")' 2>/dev/null)
 EOF
   [ -n "$matched" ] || return 0
   chosen=$(printf '%s' "$shell" | jq -r --arg ids "$matched" --arg name "${key##*/}" '
@@ -638,16 +646,17 @@ fm_backend_t3_thread_create() {  # <project-id> <title> <worktree> <branch-or-em
 # fm_backend_t3_turn_start: send one user message. Prints the message id it
 # minted so a caller can prove the message landed (fm_backend_t3_message_landed):
 # the server answers 200 for a turn on an ARCHIVED thread too and simply drops
-# it (observed live), so acceptance alone is not delivery. A non-empty
+# it (observed live), so acceptance alone is not delivery. <runtime-mode> is
+# the permission posture the turn runs under. A non-empty
 # <model-selection-json> switches the thread's model for this turn onward.
-fm_backend_t3_turn_start() {  # <thread-id> <text> [model-selection-json]
+fm_backend_t3_turn_start() {  # <thread-id> <text> <runtime-mode> [model-selection-json]
   local cmd mid
   mid=$(fm_backend_t3_uuid) || return 1
   cmd=$(jq -cn --arg cid "$(fm_backend_t3_uuid)" --arg tid "$1" --arg mid "$mid" \
-    --arg text "$2" --arg model "${3-}" --arg now "$(fm_backend_t3_now)" \
+    --arg text "$2" --arg mode "$3" --arg model "${4-}" --arg now "$(fm_backend_t3_now)" \
     '{type:"thread.turn.start",commandId:$cid,threadId:$tid,
       message:{messageId:$mid,role:"user",text:$text,attachments:[]},
-      runtimeMode:"full-access",interactionMode:"default",createdAt:$now}
+      runtimeMode:$mode,interactionMode:"default",createdAt:$now}
      + (if $model == "" then {} else {modelSelection:($model | fromjson)} end)') || return 1
   fm_backend_t3_dispatch "$cmd" >/dev/null || return $?
   printf '%s' "$mid"
@@ -778,12 +787,14 @@ fm_backend_t3_send_key() {  # <thread-id> <key> [expected-label]
 # without retrying; other dispatch failures retry <retries> times; an accepted
 # send whose landing could not be read reports `pending-unproven`.
 fm_backend_t3_send_text_submit() {  # <thread-id> <text> <retries> <enter-sleep> <settle> [expected-label]
-  local thread=$1 text=$2 retries=${3:-1} sleep_s=${4:-0.5} attempt=0 rc mid
+  local thread=$1 text=$2 retries=${3:-1} sleep_s=${4:-0.5} attempt=0 rc mid mode
   case "$retries" in ''|*[!0-9]*|0) retries=1 ;; esac
+  mode=$(fm_backend_t3_thread_json "$thread" 1 2>/dev/null | jq -r '.thread.runtimeMode // empty' 2>/dev/null) || mode=
+  [ -n "$mode" ] || mode=full-access
   while [ "$attempt" -lt "$retries" ]; do
     attempt=$((attempt + 1))
     rc=0
-    mid=$(fm_backend_t3_turn_start "$thread" "$text" 2>/dev/null) || rc=$?
+    mid=$(fm_backend_t3_turn_start "$thread" "$text" "$mode" 2>/dev/null) || rc=$?
     if [ "$rc" -eq 0 ]; then
       rc=0
       fm_backend_t3_message_landed "$thread" "$mid" || rc=$?

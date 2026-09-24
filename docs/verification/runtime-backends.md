@@ -1922,6 +1922,14 @@ One steer sent right after the interrupt was not acted on until the relaunch del
 The unacted steer was therefore the worker not acting on a doorbell it received, which the durable steering-inbox record and the watcher's re-ring ladder cover on every backend, and which the relaunch resolved here.
 The scratch project was removed with `t3 project remove <id> --force` after each run, every scratch thread archived, and every `firstmate:` session revoked.
 
+### Project rooted at another clone
+
+Run on 2026-09-24 against the same T3 Code v0.0.42 server: a scratch bare origin with two clones, `clone-a` and `clone-b`.
+The T3 project was registered at `clone-a` with `t3 project add`, and its shell record carried `repositoryIdentity` `{canonicalKey, locator: {source: git-remote, remoteName: origin, remoteUrl: <the origin path>}}`.
+A thread created in that project with `worktreePath` set to a linked worktree of `clone-b` ran its provider with its cwd equal to that worktree, and the worker's `pwd -P` and `git rev-parse --show-toplevel` both printed the `clone-b` worktree path.
+The `Stop` hook from that worktree's `.claude/settings.local.json` fired.
+The thread was deleted and the project removed afterwards.
+
 ### Regression entry points
 
 ```sh

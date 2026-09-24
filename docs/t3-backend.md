@@ -29,7 +29,8 @@ Routine supervision does not require the GUI: `bin/fm-peek.sh <id>` renders the 
 
 Every task's thread lands in the T3 project for its repository.
 A project whose workspace root is Firstmate's project clone is used first.
-Otherwise Firstmate uses the project T3 already has for the same repository, such as one the captain registered from their own checkout: the clone's `origin` is matched against each project's `repositoryIdentity.canonicalKey`, or against the `origin` of its workspace root when T3 reports no identity for it.
+Otherwise Firstmate uses the project T3 already has for the same repository, such as one the captain registered from their own checkout: the same repository means the same `origin` URL as the project clone, never an `upstream` remote.
+Each project's `origin` is read from its workspace root; only when that directory is unreadable does Firstmate fall back to the project's `repositoryIdentity`, and then only when its locator names the `origin` remote, because T3 builds that identity from `upstream` first and its `canonicalKey` is not an origin.
 Remotes compare the way T3 normalizes them, so `git@github.com:owner/repo.git`, `ssh://git@github.com/owner/repo`, and `https://github.com/owner/repo` name one repository.
 When several projects match, the one titled after the repository wins, then the oldest; the spawn prints a notice naming the chosen project's title and workspace root, and `t3_project_id=` records it.
 Only when T3 has no project for the repository does the first task register one rooted at the project clone, exactly as `t3 project add` would.
@@ -38,6 +39,7 @@ No manual project registration is required.
 Each task leases its Treehouse worktree first, non-interactively, then creates a T3 thread with `worktreePath` set to that worktree and `branch` set to its current branch when it has one.
 T3 launches the provider process in the worktree; a thread created without that binding would run in the project root, which is why Firstmate never creates one that way.
 The thread's title is the task label `fm-<id>`, its model comes from the spawn's `--model` and `--effort`, then the T3 project's default model, then T3's own default for the claude provider, and its runtime mode follows `config/claude-permission-mode`: the default bypass posture maps to T3's full-access mode and `auto` maps to T3's auto mode.
+The launch and relaunch briefs carry that same mode on their turn, so a relaunch applies a changed posture, and every steer or doorbell carries the thread's own recorded mode.
 
 ```text
 backend=t3

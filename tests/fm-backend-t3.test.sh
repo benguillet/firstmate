@@ -163,12 +163,12 @@ t3_call() {
   t3_env bash -c '. "$0/bin/fm-backend.sh"; fm_backend_source t3 || exit 97; "$@"' "$ROOT" "$@"
 }
 
-seed_project() {  # <id> <workspace-root> [title] [repository-key] [created-at]
+seed_project() {  # <id> <workspace-root> [title] [repository-key] [created-at] [identity-remote]
   jq --arg id "$1" --arg root "$2" --arg t "${3:-proj}" --arg key "${4:-}" \
-    --arg at "${5:-2026-01-01T00:00:00.000Z}" '
+    --arg at "${5:-2026-01-01T00:00:00.000Z}" --arg remote "${6:-origin}" '
     .projects[$id] = ({id:$id,title:$t,workspaceRoot:$root,defaultModelSelection:null,createdAt:$at}
       + (if $key == "" then {} else {repositoryIdentity:{canonicalKey:$key,
-          locator:{source:"git-remote",remoteName:"origin",remoteUrl:("https://" + $key)}}} end))' \
+          locator:{source:"git-remote",remoteName:$remote,remoteUrl:("https://" + $key)}}} end))' \
     "$FAKE/state.json" > "$FAKE/state.json.new" && mv "$FAKE/state.json.new" "$FAKE/state.json"
 }
 
@@ -354,6 +354,36 @@ test_project_find_matches_the_repository_by_origin() {
   pass "fm_backend_t3_project_ensure: registers a project only when T3 has none for the repository"
 }
 
+test_project_find_reads_origin_not_t3s_upstream_identity() {
+  local clone captain decoy id out
+  t3_case project-upstream
+  clone="$CASE_DIR/projects/fork-app"
+  fm_git_init_commit "$clone"
+  git -C "$clone" remote add origin git@github.com:fm-t3-test/fork-app.git
+  # The captain's checkout shares the clone's origin but also has an upstream,
+  # which T3 v0.0.42 builds repositoryIdentity from.
+  captain="$CASE_DIR/captain-fork-app"
+  fm_git_init_commit "$captain"
+  git -C "$captain" remote add origin https://github.com/fm-t3-test/fork-app
+  git -C "$captain" remote add upstream https://github.com/fm-t3-oss/fork-app
+  id=$(uuid)
+  seed_project "$id" "$(cd "$captain" && pwd -P)" checkout github.com/fm-t3-oss/fork-app \
+    2026-06-01T00:00:00.000Z upstream
+  # Older and titled after the repository, so either would win if it matched:
+  # a readable root whose origin differs although T3's key equals the clone's,
+  # and an unreadable root whose identity names only an upstream remote.
+  decoy="$CASE_DIR/decoy-app"
+  fm_git_init_commit "$decoy"
+  git -C "$decoy" remote add origin https://github.com/fm-t3-test/other-app
+  seed_project "$(uuid)" "$(cd "$decoy" && pwd -P)" fork-app github.com/fm-t3-test/fork-app \
+    2020-01-01T00:00:00.000Z origin
+  seed_project "$(uuid)" /nonexistent/upstream-only fork-app github.com/fm-t3-test/fork-app \
+    2019-01-01T00:00:00.000Z upstream
+  out=$(t3_call fm_backend_t3_project_find "$clone" 2>/dev/null) || fail "project_find failed"
+  [ "$out" = "$id" ] || fail "the project whose root has the clone's origin should match despite an upstream identity, got '$out'"
+  pass "fm_backend_t3_project_find: matches the candidate's origin, never T3's upstream-derived identity"
+}
+
 test_model_selection_precedence_and_harness_gate() {
   local pid out status
   t3_case model
@@ -495,6 +525,12 @@ test_send_text_submit_is_a_turn_start() {
   [ "$(dispatch_types)" = "thread.turn.start" ] || fail "send should dispatch exactly thread.turn.start, got '$(dispatch_types)'"
   [ "$(dispatch_last thread.turn.start .message.text)" = "hello worker" ] || fail "the message text should be sent verbatim"
   [ "$(dispatch_last thread.turn.start .message.role)" = user ] || fail "the message should be a user message"
+  [ "$(dispatch_last thread.turn.start .runtimeMode)" = full-access ] || fail "a full-access thread's turn should carry full-access"
+  set_thread "$tid" '.runtimeMode = "auto"'
+  : > "$FAKE/dispatch.log"
+  out=$(t3_call fm_backend_t3_send_text_submit "$tid" "steer an auto thread" 3 0.01 0.01)
+  [ "$out" = empty ] || fail "a send to an auto thread should deliver, got '$out'"
+  [ "$(dispatch_last thread.turn.start .runtimeMode)" = auto ] || fail "a steer must carry the thread's own auto runtime mode"
   # A busy thread still accepts a queued message (T3 delivers it mid-turn).
   set_thread "$tid" '.session.status = "running" | .session.activeTurnId = "turn-9"'
   : > "$FAKE/dispatch.log"
@@ -826,6 +862,28 @@ test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start() {
   assert_absent "$HOME_DIR/state/$id.meta" "a refused brief turn should leave no task record"
   rm -rf "/tmp/fm-$id"
   pass "fm-spawn.sh --backend t3: a refused brief turn archives the thread, returns the lease, and leaves no record"
+
+  # A thread whose close cannot be proven keeps its lease: the worktree may
+  # still hold a running provider.
+  id=t3noclosez1
+  fm_test_spawn_brief "$HOME_DIR" "$id"
+  : > "$FAKE/fail-turn-start"
+  : > "$FAKE/fail-archive"
+  : > "$FAKE/dispatch.log"
+  : > "$T3LOG"
+  out=$(t3_env FM_SPAWN_NO_GUARD=1 FM_T3_START_WAIT=1 \
+    "$ROOT/bin/fm-spawn.sh" "$id" "$proj" claude --mode no-mistakes --yolo off --backend t3 2>&1)
+  status=$?
+  rm -f "$FAKE/fail-turn-start" "$FAKE/fail-archive"
+  [ "$status" -ne 0 ] || fail "a launch whose brief turn is refused must fail"$'\n'"$out"
+  tid=$(dispatch_last thread.create .threadId)
+  wt=$(dispatch_last thread.create .worktreePath)
+  assert_contains "$out" "T3 thread $tid could not be proven closed" "the warning should name the unclosed thread"
+  assert_contains "$out" "worktree $wt" "the warning should name the kept worktree"
+  assert_not_contains "$(cat "$T3LOG")" $'treehouse\x1f''return' "an unproven close must not return the lease"
+  [ -d "$wt" ] || fail "an unproven close must keep the leased worktree"
+  rm -rf "/tmp/fm-$id"
+  pass "fm-spawn.sh --backend t3: a failed launch whose thread close is unproven keeps the lease and says so"
 }
 
 test_spawn_t3_relaunch_carries_model_and_keeps_thread_on_failure() {
@@ -846,7 +904,10 @@ test_spawn_t3_relaunch_carries_model_and_keeps_thread_on_failure() {
   wt=$(dispatch_last thread.create .worktreePath)
   meta="$HOME_DIR/state/$id.meta"
 
+  [ "$(dispatch_last thread.turn.start .runtimeMode)" = full-access ] || fail "the default posture's brief turn should carry full-access"
+
   set_thread "$tid" '.session.status = "stopped"'
+  printf 'auto\n' > "$HOME_DIR/config/claude-permission-mode"
   : > "$FAKE/dispatch.log"
   out=$(t3_env FM_SPAWN_NO_GUARD=1 FM_T3_START_WAIT=5 \
     "$ROOT/bin/fm-spawn.sh" "$id" --relaunch --harness claude --model claude-next-model --effort low 2>&1)
@@ -857,7 +918,9 @@ test_spawn_t3_relaunch_carries_model_and_keeps_thread_on_failure() {
   [ "$(dispatch_last thread.turn.start '.modelSelection | tojson')" = '{"instanceId":"claudeAgent","model":"claude-next-model","options":[{"id":"effort","value":"low"}]}' ] \
     || fail "the relaunch brief turn should carry the relaunch's model and effort"
   assert_grep "model=claude-next-model" "$meta" "meta should record the relaunch model"
-  pass "fm-spawn.sh --relaunch on t3: the brief turn carries the relaunch's model selection"
+  [ "$(dispatch_last thread.turn.start .runtimeMode)" = auto ] || fail "the relaunch brief turn should carry the changed auto posture"
+  rm -f "$HOME_DIR/config/claude-permission-mode"
+  pass "fm-spawn.sh --relaunch on t3: the brief turn carries the relaunch's model selection and permission posture"
 
   set_thread "$tid" '.session.status = "stopped"'
   cp "$meta" "$CASE_DIR/meta.before"
@@ -895,6 +958,7 @@ test_origin_requires_running_server
 test_session_is_minted_once_cached_privately_and_refreshed_on_401
 test_project_ensure_matches_existing_root_or_creates
 test_project_find_matches_the_repository_by_origin
+test_project_find_reads_origin_not_t3s_upstream_identity
 test_model_selection_precedence_and_harness_gate
 test_thread_create_binds_worktree_and_reads_back
 test_runtime_mode_maps_permission_flag
