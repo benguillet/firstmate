@@ -492,15 +492,12 @@ EOF
   [ "$(t3_call fm_backend_t3_session_status "$tid")" = missing ] || fail "an archived thread should read missing"
   [ "$(t3_call fm_backend_t3_agent_state "$tid")" = missing ] || fail "an archived thread's agent state should be missing"
   [ "$(t3_call fm_backend_t3_busy_state "$tid")" = unknown ] || fail "an archived thread's busy state should be unknown"
-  [ "$(t3_call fm_backend_t3_endpoint_absence "$tid")" = gone ] || fail "an archived thread's absence should be proven gone"
   t3_call fm_backend_t3_target_exists "$tid" && fail "an archived thread must not exist"
   [ "$(t3_call fm_backend_t3_agent_state "$(uuid)")" = missing ] || fail "an unknown thread id should read missing"
   # An unreachable server is unreadable, never death.
   out=$(FM_T3_ORIGIN_OVERRIDE=http://127.0.0.1:9 FM_T3_HTTP_TIMEOUT=2 t3_call fm_backend_t3_agent_state "$tid")
   [ "$out" = unreadable ] || fail "an unreachable server should read unreadable, got '$out'"
-  [ "$(FM_T3_ORIGIN_OVERRIDE=http://127.0.0.1:9 FM_T3_HTTP_TIMEOUT=2 t3_call fm_backend_t3_endpoint_absence "$tid")" = unproven ] \
-    || fail "an unreachable server cannot prove absence"
-  pass "fm_backend_t3 state reads: session status maps onto busy, agent, composer, and absence verdicts; 404 is gone, an unreachable server is unreadable"
+  pass "fm_backend_t3 state reads: session status maps onto busy, agent, and composer verdicts; 404 is gone, an unreachable server is unreadable"
 }
 
 test_capture_renders_transcript_tail_with_state_footer() {

@@ -802,17 +802,6 @@ fm_backend_t3_agent_state() {  # <thread-id>
   esac
 }
 
-# fm_backend_t3_endpoint_absence: gone|dead|alive|unproven for the control
-# plane's absence proof. A 404 from the server that owns the thread is proof.
-fm_backend_t3_endpoint_absence() {  # <thread-id>
-  case "$(fm_backend_t3_session_status "$1")" in
-    missing) printf 'gone' ;;
-    unreadable) printf 'unproven' ;;
-    error) printf 'dead' ;;
-    *) printf 'alive' ;;
-  esac
-}
-
 fm_backend_t3_current_path() {  # <thread-id>
   local body
   body=$(fm_backend_t3_thread_json "$1" 1) || return 1

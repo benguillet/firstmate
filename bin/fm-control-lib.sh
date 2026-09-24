@@ -311,7 +311,9 @@ fm_control_backend_state_verified() {  # <backend>
 #     deadlocked as it was before this change - no worse - but deliberately.
 #
 # Both control-plane callers share this one implementation so the proof cannot
-# drift into two answers for the same endpoint.
+# drift into two answers for the same endpoint. t3 never reaches it: both
+# callers read a T3 thread's session status directly, where the owning server's
+# 404 already tells a gone thread from an unreachable server.
 fm_control_endpoint_absence_verdict() {  # <backend> <target>
   local backend=${1-} target=${2-}
   fm_backend_source "$backend" \
@@ -329,18 +331,6 @@ fm_control_endpoint_absence_verdict() {  # <backend> <target>
         alive) printf 'alive\t' ;;
         missing) printf 'gone\t' ;;
         *) printf 'unproven\tthe recorded herdr session'"'"'s server could not be started, or its pane could not be classified once it was running' ;;
-      esac
-      ;;
-    t3)
-      # The server that owns the thread answers the read directly: its
-      # not-found IS the proof (T3 hides archived threads like deleted ones),
-      # a readable thread is there after all, and only an unreachable server
-      # leaves absence unproven.
-      case "$(fm_backend_t3_endpoint_absence "$target")" in
-        gone) printf 'gone\t' ;;
-        dead) printf 'dead\t' ;;
-        alive) printf 'alive\t' ;;
-        *) printf 'unproven\tthe T3 Code server that owns the thread could not be read, so the thread'"'"'s absence cannot be proven' ;;
       esac
       ;;
     *)
