@@ -4119,10 +4119,11 @@ agy_spawn_fail() {  # <detail>
 # The claude --append-system-prompt trust statement has no settings carrier and
 # is the one launch-line piece a T3 worker does not receive.
 t3_launch_deliver() {
-  local settings="$WT/.claude/settings.local.json" tmp env_json brief_text task_marker='' lavish='' model_sel=''
+  local settings="$WT/.claude/settings.local.json" tmp env_json brief_text task_marker='' lavish='' model_sel='' mode
   [ "$KIND" != ship ] && [ "$KIND" != scout ] || task_marker=$ID
   [ "$LAVISH_AXI_HOST_CONFIG_PRESENT" != 1 ] || lavish=$LAVISH_AXI_HOST
   [ "$RELAUNCH" -eq 0 ] || model_sel=$T3_MODEL_SELECTION
+  mode=$(fm_backend_t3_runtime_mode "$CLAUDE_PERM_FLAG")
   [ -f "$settings" ] || {
     t3_spawn_fail "the claude worker settings file $settings was not written before the T3 launch; refusing to start a worker with no busy or turn-end wiring"
     return 1
@@ -4151,8 +4152,12 @@ t3_launch_deliver() {
     t3_spawn_fail "could not encode the launch brief for the T3 thread $T"
     return 1
   }
+  if [ "$RELAUNCH" -eq 1 ] && ! fm_backend_t3_runtime_mode_ensure "$T" "$mode"; then
+    t3_spawn_fail "T3 thread $T could not be switched to runtime mode $mode, the posture config/claude-permission-mode now selects, so the relaunch brief was not sent"
+    return 1
+  fi
   SPAWN_LAUNCH_SENT=1
-  fm_backend_t3_turn_start "$T" "$brief_text" "$(fm_backend_t3_runtime_mode "$CLAUDE_PERM_FLAG")" "$model_sel" >/dev/null || {
+  fm_backend_t3_turn_start "$T" "$brief_text" "$mode" "$model_sel" >/dev/null || {
     t3_spawn_fail "the launch brief could not be sent to T3 thread $T"
     return 1
   }
@@ -4166,11 +4171,14 @@ t3_launch_deliver() {
 # fresh spawn the record's rollback in the abort trap removes what named the
 # thread, so the thread is archived and, once that close is proven, the leased
 # slot returned under the Treehouse project lock every slot return and claim
-# release holds; the claim is released only after the return. A relaunch
+# release holds; the claim is released only after the return. That lock is
+# only tried for a bounded time, because this process still holds the task's
+# meta lock and teardown takes the Treehouse lock before it. A relaunch
 # keeps its record, thread, and worktree - the work they hold is exactly what a
 # relaunch preserves, and an archived thread could never be relaunched again -
 # so it only stops whatever session the brief turn started.
 t3_spawn_fail() {  # <detail>
+  local attempt=0
   printf '%s\n' "$(status_stamp_line "failed: $1")" >>"$STATE/$ID.status"
   echo "error: $1" >&2
   if [ "$RELAUNCH" -eq 1 ]; then
@@ -4188,7 +4196,15 @@ t3_spawn_fail() {  # <detail>
     SPAWN_SLOT_CLAIMED=0
     return 0
   fi
-  fm_lock_acquire_wait "$SPAWN_TREEHOUSE_PROJECT_LOCK"
+  until fm_lock_try_acquire "$SPAWN_TREEHOUSE_PROJECT_LOCK"; do
+    attempt=$((attempt + 1))
+    if [ "$attempt" -ge 50 ]; then
+      echo "warning: the Treehouse project lock for $PROJ_ABS stayed held by another operation; leaving the leased worktree $T3_LEASED_WT of closed T3 thread $T and its slot claim in place" >&2
+      SPAWN_SLOT_CLAIMED=0
+      return 0
+    fi
+    sleep 0.1
+  done
   SPAWN_TREEHOUSE_PROJECT_LOCK_HELD=1
   if ! (cd "$PROJ_ABS" && treehouse return --force "$T3_LEASED_WT") >/dev/null 2>&1; then
     echo "warning: could not return the leased Treehouse worktree $T3_LEASED_WT of closed T3 thread $T after the failed launch of $ID; leaving its slot claim in place" >&2

@@ -39,7 +39,7 @@ No manual project registration is required.
 Each task leases its Treehouse worktree first, non-interactively, then creates a T3 thread with `worktreePath` set to that worktree and `branch` set to its current branch when it has one.
 T3 launches the provider process in the worktree; a thread created without that binding would run in the project root, which is why Firstmate never creates one that way.
 The thread's title is the task label `fm-<id>`, its model comes from the spawn's `--model` and `--effort`, then the T3 project's default model, then T3's own default for the claude provider, and its runtime mode follows `config/claude-permission-mode`: the default bypass posture maps to T3's full-access mode and `auto` maps to T3's auto mode.
-The launch and relaunch briefs carry that same mode on their turn, so a relaunch applies a changed posture, and every steer or doorbell carries the thread's own recorded mode.
+T3 starts the provider under the thread's own runtime mode and treats the mode a turn carries as informational, so a relaunch whose resolved posture differs from the thread's switches the thread with `thread.runtime-mode.set` and reads it back before the brief turn, refusing the relaunch when the change does not stick.
 
 ```text
 backend=t3

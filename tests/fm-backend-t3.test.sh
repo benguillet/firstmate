@@ -141,6 +141,7 @@ t3_case() {
   FB=$(make_t3_fakebin "$CASE_DIR")
   : > "$FAKE/dispatch.log"
   rm -f "$FAKE/fail-thread-create" "$FAKE/fail-turn-start" "$FAKE/fail-session-stop" "$FAKE/fail-archive" \
+    "$FAKE/fail-runtime-mode-set" \
     "$FAKE/on-turn-status" "$FAKE/on-interrupt-status"
 }
 
@@ -770,7 +771,7 @@ test_spawn_t3_end_to_end_then_control_peek_and_teardown() {
 }
 
 test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start() {
-  local proj unregistered pid id out status subhome tid wt
+  local proj unregistered pid id out status subhome tid wt spawn_pid holder
   t3_case spawn-refusals
   proj="$CASE_DIR/project"
   fm_git_init_commit "$proj"
@@ -884,6 +885,50 @@ test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start() {
   [ -d "$wt" ] || fail "an unproven close must keep the leased worktree"
   rm -rf "/tmp/fm-$id"
   pass "fm-spawn.sh --backend t3: a failed launch whose thread close is unproven keeps the lease and says so"
+
+  # The spawn still holds its meta lock when a launch fails, and teardown takes
+  # the Treehouse project lock before that one, so a held Treehouse lock must
+  # bound the wait and leave the lease rather than block.
+  id=t3lockedz1
+  fm_test_spawn_brief "$HOME_DIR" "$id"
+  printf 'stopped\n' > "$FAKE/on-turn-status"
+  : > "$FAKE/dispatch.log"
+  : > "$T3LOG"
+  rm -f "$CASE_DIR/lock-held"
+  t3_env FM_SPAWN_NO_GUARD=1 FM_T3_START_WAIT=4 \
+    "$ROOT/bin/fm-spawn.sh" "$id" "$proj" claude --mode no-mistakes --yolo off --backend t3 \
+    > "$CASE_DIR/locked.out" 2>&1 &
+  spawn_pid=$!
+  for _ in $(seq 1 100); do
+    [ -z "$(dispatch_last thread.turn.start .threadId)" ] || break
+    sleep 0.1
+  done
+  # shellcheck disable=SC2016  # $0, $1, and $2 are the child shell's own positionals.
+  t3_env bash -c '. "$0/bin/fm-wake-lib.sh"; lock=$(fm_treehouse_project_lock_path "$1") || exit 1
+    fm_lock_try_acquire "$lock" || exit 1; printf "%s\n" "$lock" > "$2"; exec sleep 30' \
+    "$ROOT" "$proj" "$CASE_DIR/lock-held" &
+  holder=$!
+  for _ in $(seq 1 50); do
+    [ ! -s "$CASE_DIR/lock-held" ] || break
+    sleep 0.1
+  done
+  wait "$spawn_pid"
+  status=$?
+  kill "$holder" 2>/dev/null || true
+  wait "$holder" 2>/dev/null || true
+  rm -f "$FAKE/on-turn-status"
+  out=$(cat "$CASE_DIR/locked.out")
+  assert_present "$CASE_DIR/lock-held" "the test could not hold the Treehouse project lock"
+  [ "$status" -ne 0 ] || fail "a launch whose session never starts must fail"$'\n'"$out"
+  tid=$(dispatch_last thread.create .threadId)
+  wt=$(dispatch_last thread.create .worktreePath)
+  [ "$(thread_field "$tid" .archivedAt)" != null ] || fail "the thread should still be archived while the lock is contended"
+  assert_contains "$out" "Treehouse project lock for" "the warning should say the Treehouse lock stayed held"
+  assert_contains "$out" "worktree $wt of closed T3 thread $tid" "the warning should name the kept worktree and the thread"
+  assert_not_contains "$(cat "$T3LOG")" $'treehouse\x1f''return' "a contended lock must not return the lease"
+  [ -d "$wt" ] || fail "a contended lock must keep the leased worktree"
+  rm -rf "/tmp/fm-$id"
+  pass "fm-spawn.sh --backend t3: a failed launch bounds its Treehouse lock wait and leaves the lease when it is held"
 }
 
 test_spawn_t3_relaunch_carries_model_and_keeps_thread_on_failure() {
@@ -913,14 +958,16 @@ test_spawn_t3_relaunch_carries_model_and_keeps_thread_on_failure() {
     "$ROOT/bin/fm-spawn.sh" "$id" --relaunch --harness claude --model claude-next-model --effort low 2>&1)
   status=$?
   expect_code 0 "$status" "a T3 relaunch should succeed"$'\n'"$out"
-  [ "$(dispatch_types)" = "thread.turn.start" ] || fail "a relaunch should only start the brief turn on the adopted thread, got '$(dispatch_types)'"
+  [ "$(dispatch_types)" = "thread.runtime-mode.set thread.turn.start" ] \
+    || fail "a relaunch under a changed posture should switch the thread's mode, then start the brief turn, got '$(dispatch_types)'"
+  [ "$(dispatch_last thread.runtime-mode.set .runtimeMode)" = auto ] || fail "the mode switch should name auto"
   [ "$(dispatch_last thread.turn.start .threadId)" = "$tid" ] || fail "the relaunch brief should go to the task's own thread"
   [ "$(dispatch_last thread.turn.start '.modelSelection | tojson')" = '{"instanceId":"claudeAgent","model":"claude-next-model","options":[{"id":"effort","value":"low"}]}' ] \
     || fail "the relaunch brief turn should carry the relaunch's model and effort"
   assert_grep "model=claude-next-model" "$meta" "meta should record the relaunch model"
-  [ "$(dispatch_last thread.turn.start .runtimeMode)" = auto ] || fail "the relaunch brief turn should carry the changed auto posture"
-  rm -f "$HOME_DIR/config/claude-permission-mode"
-  pass "fm-spawn.sh --relaunch on t3: the brief turn carries the relaunch's model selection and permission posture"
+  [ "$(thread_field "$tid" .runtimeMode)" = auto ] || fail "the relaunched thread should run under the changed auto posture"
+  [ "$(thread_field "$tid" .session.runtimeMode)" = auto ] || fail "the relaunched provider session should run under auto"
+  pass "fm-spawn.sh --relaunch on t3: the brief turn carries the relaunch's model, and the thread takes the changed posture"
 
   set_thread "$tid" '.session.status = "stopped"'
   cp "$meta" "$CASE_DIR/meta.before"
@@ -944,14 +991,30 @@ test_spawn_t3_relaunch_carries_model_and_keeps_thread_on_failure() {
   [ "$status" -ne 0 ] || fail "a relaunch whose session never starts must fail"$'\n'"$out"
   assert_contains "$out" "reported no starting or running session" "the relaunch failure should say what was not observed"
   [ "$(dispatch_types)" = "thread.turn.start thread.session.stop" ] \
-    || fail "a failed relaunch should stop the session it started and never archive the thread, got '$(dispatch_types)'"
+    || fail "a failed relaunch under an unchanged posture should switch no mode, stop the session it started, and never archive the thread, got '$(dispatch_types)'"
   [ "$(thread_field "$tid" .archivedAt)" = null ] || fail "a failed relaunch must keep the thread relaunchable"
   [ "$(thread_field "$tid" .session.status)" = stopped ] || fail "a failed relaunch should leave the session stopped"
   [ -d "$wt" ] || fail "a failed relaunch must keep the worktree"
   assert_not_contains "$(cat "$T3LOG")" $'treehouse\x1f''return' "a failed relaunch must not return the worktree"
   assert_present "$meta" "a failed relaunch keeps the record naming the thread"
-  rm -rf "/tmp/fm-$id"
   pass "fm-spawn.sh --relaunch on t3: a relaunch that never starts stops the session but keeps the thread and worktree"
+
+  # A posture change T3 does not apply refuses before the brief turn.
+  rm -f "$HOME_DIR/config/claude-permission-mode"
+  : > "$FAKE/fail-runtime-mode-set"
+  : > "$FAKE/dispatch.log"
+  out=$(t3_env FM_SPAWN_NO_GUARD=1 FM_T3_START_WAIT=1 \
+    "$ROOT/bin/fm-spawn.sh" "$id" --relaunch --harness claude 2>&1)
+  status=$?
+  rm -f "$FAKE/fail-runtime-mode-set"
+  [ "$status" -ne 0 ] || fail "a relaunch whose mode switch does not stick must fail"$'\n'"$out"
+  assert_contains "$out" "could not be switched to runtime mode full-access" "the refusal should name the mode that did not stick"
+  [ "$(dispatch_types)" = "thread.runtime-mode.set" ] \
+    || fail "a mode switch that does not stick must send no brief turn and archive nothing, got '$(dispatch_types)'"
+  [ "$(thread_field "$tid" .runtimeMode)" = auto ] || fail "the thread should keep the mode T3 reports"
+  [ "$(thread_field "$tid" .archivedAt)" = null ] || fail "a refused mode switch must keep the thread relaunchable"
+  rm -rf "/tmp/fm-$id"
+  pass "fm-spawn.sh --relaunch on t3: a posture T3 does not apply refuses the relaunch before the brief turn"
 }
 
 test_origin_requires_running_server

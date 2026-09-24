@@ -25,6 +25,8 @@ mutate it with jq between calls:
   fail-turn-start      presence makes thread.turn.start answer 500
   fail-session-stop    presence makes thread.session.stop answer 200 but
                        change nothing (the ignored stop observed after archive)
+  fail-runtime-mode-set  presence makes thread.runtime-mode.set answer 200
+                       but change nothing
   fail-archive         presence makes thread.archive answer 200 but change
                        nothing, so a re-read still finds the thread
 Archived and deleted threads answer 404 thread_not_found and vanish from the
@@ -225,7 +227,7 @@ class Handler(BaseHTTPRequestHandler):
                 "deletedAt": None,
             }
         elif kind in ("thread.turn.start", "thread.turn.interrupt", "thread.session.stop",
-                      "thread.archive", "thread.delete"):
+                      "thread.runtime-mode.set", "thread.archive", "thread.delete"):
             thread = threads.get(cmd.get("threadId", ""))
             if thread is None:
                 internal()
@@ -271,6 +273,14 @@ class Handler(BaseHTTPRequestHandler):
                 if thread.get("session") and not flag("fail-session-stop"):
                     thread["session"]["status"] = "stopped"
                     thread["session"]["activeTurnId"] = None
+            elif kind == "thread.runtime-mode.set":
+                if not cmd.get("runtimeMode"):
+                    self._send(400, None)
+                    return
+                if not flag("fail-runtime-mode-set"):
+                    thread["runtimeMode"] = cmd["runtimeMode"]
+                    if thread.get("session"):
+                        thread["session"]["runtimeMode"] = cmd["runtimeMode"]
             elif kind == "thread.archive":
                 if not flag("fail-archive"):
                     thread["archivedAt"] = ts

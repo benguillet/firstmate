@@ -647,7 +647,8 @@ fm_backend_t3_thread_create() {  # <project-id> <title> <worktree> <branch-or-em
 # minted so a caller can prove the message landed (fm_backend_t3_message_landed):
 # the server answers 200 for a turn on an ARCHIVED thread too and simply drops
 # it (observed live), so acceptance alone is not delivery. <runtime-mode> is
-# the permission posture the turn runs under. A non-empty
+# informational to T3 v0.0.42, which starts the provider under the thread's own
+# runtimeMode (fm_backend_t3_runtime_mode_ensure changes that). A non-empty
 # <model-selection-json> switches the thread's model for this turn onward.
 fm_backend_t3_turn_start() {  # <thread-id> <text> <runtime-mode> [model-selection-json]
   local cmd mid
@@ -660,6 +661,23 @@ fm_backend_t3_turn_start() {  # <thread-id> <text> <runtime-mode> [model-selecti
      + (if $model == "" then {} else {modelSelection:($model | fromjson)} end)') || return 1
   fm_backend_t3_dispatch "$cmd" >/dev/null || return $?
   printf '%s' "$mid"
+}
+
+# fm_backend_t3_runtime_mode_ensure: make the thread's own runtimeMode - the
+# posture T3 starts its provider under - <runtime-mode>, dispatching
+# thread.runtime-mode.set only when it differs, and prove it by re-read.
+fm_backend_t3_runtime_mode_ensure() {  # <thread-id> <runtime-mode>
+  local thread=$1 mode=$2 current cmd
+  current=$(fm_backend_t3_thread_json "$thread" 1 2>/dev/null | jq -r '.thread.runtimeMode // empty' 2>/dev/null) || current=
+  [ "$current" != "$mode" ] || return 0
+  cmd=$(jq -cn --arg cid "$(fm_backend_t3_uuid)" --arg tid "$thread" --arg mode "$mode" --arg now "$(fm_backend_t3_now)" \
+    '{type:"thread.runtime-mode.set",commandId:$cid,threadId:$tid,runtimeMode:$mode,createdAt:$now}') || return 1
+  fm_backend_t3_dispatch "$cmd" >/dev/null || return 1
+  current=$(fm_backend_t3_thread_json "$thread" 1 2>/dev/null | jq -r '.thread.runtimeMode // empty' 2>/dev/null) || current=
+  [ "$current" = "$mode" ] || {
+    echo "error: t3 thread $thread records runtimeMode '${current:-unreadable}' after thread.runtime-mode.set $mode" >&2
+    return 1
+  }
 }
 
 # fm_backend_t3_message_landed: 0 when the thread's transcript holds <message-id>,
