@@ -4229,6 +4229,7 @@ t3_spawn_fail() {  # <detail>
     SPAWN_SLOT_CLAIMED=0
     return 0
   fi
+  SPAWN_ENDPOINT_CLOSED=1
   [ -n "$T3_LEASED_WT" ] || return 0
   if ! SPAWN_TREEHOUSE_PROJECT_LOCK=$(fm_treehouse_project_lock_path "$PROJ_ABS"); then
     echo "warning: could not resolve the Treehouse project lock for $PROJ_ABS; leaving the leased worktree $T3_LEASED_WT of closed T3 thread $T and its slot claim in place" >&2

@@ -43,7 +43,9 @@
 #     (bin/fm-spawn.sh's claude arm) loads unchanged; UserPromptSubmit, Stop and
 #     SessionEnd all fired live, including Stop on an interrupted turn;
 #   - launch environment (GOTMPDIR, FM_TASK_ID, COMPACT_ADVISER_DISABLE,
-#     LAVISH_AXI_HOST, TRACEPARENT, the claude feedback and suggestion switches):
+#     LAVISH_AXI_HOST, TRACEPARENT, the claude feedback and suggestion switches,
+#     and the GIT_CONFIG_COUNT/GIT_CONFIG_KEY_0=core.hooksPath/GIT_CONFIG_VALUE_0
+#     override that points git at the AI-trailer strip hooks):
 #     the same settings file's `env` map, verified to reach the worker's shell;
 #   - the attribution-off and feedbackDrafts policies: settings keys in that file;
 #   - the launch brief: the first `thread.turn.start` message, encoded exactly as

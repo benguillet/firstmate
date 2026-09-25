@@ -884,6 +884,10 @@ test_spawn_t3_end_to_end_then_control_peek_and_teardown() {
   [ "$(jq -r .env.GOTMPDIR "$settings")" = "/tmp/fm-$id/gotmp" ] || fail "settings env should carry GOTMPDIR"
   [ "$(jq -r .env.COMPACT_ADVISER_DISABLE "$settings")" = 1 ] || fail "settings env should pin the compact-adviser switch"
   [ "$(jq -r .env.CLAUDE_CODE_SEND_FEEDBACK "$settings")" = 0 ] || fail "settings env should disable feedback drafts"
+  [ "$(jq -r .env.GIT_CONFIG_COUNT "$settings")" = 1 ] \
+    && [ "$(jq -r .env.GIT_CONFIG_KEY_0 "$settings")" = core.hooksPath ] \
+    && [ "$(jq -r .env.GIT_CONFIG_VALUE_0 "$settings")" = "$(cd "$HOME_DIR/state" && pwd -P)/$id.git-hooks" ] \
+    || fail "settings env should point core.hooksPath at the task's AI-trailer strip hooks"
   [ "$(jq -r .feedbackDrafts "$settings")" = off ] || fail "settings should carry feedbackDrafts off"
   [ "$(jq -r .attribution.commit "$settings")" = "" ] && [ "$(jq -r .attribution.sessionUrl "$settings")" = false ] \
     || fail "settings should carry the attribution-off policy"
@@ -1039,6 +1043,7 @@ test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start() {
     || fail "a failed start should archive the thread it created, got '$(dispatch_types)'"
   assert_contains "$(cat "$T3LOG")" $'treehouse\x1f''return'$'\x1f''--force' "a failed fresh start should return the leased worktree"
   assert_absent "$HOME_DIR/state/$id.meta" "a failed start should leave no task record"
+  assert_absent "$HOME_DIR/state/$id.git-hooks" "a failed start whose thread was closed should remove its strip hooks"
   assert_grep "failed" "$HOME_DIR/state/$id.status" "a failed start should append a failed status line"
   rm -rf "/tmp/fm-$id"
   pass "fm-spawn.sh --backend t3: a thread that never starts is archived, its lease returned, and no record left"
@@ -1063,6 +1068,7 @@ test_spawn_t3_refuses_before_leasing_and_cleans_a_failed_start() {
   assert_contains "$(cat "$T3LOG")" $'treehouse\x1f''return'$'\x1f''--force'$'\x1f'"$wt" "a refused brief turn should return the leased worktree"
   [ ! -d "$wt" ] || fail "the leased worktree should be gone after the failed spawn"
   assert_absent "$HOME_DIR/state/$id.meta" "a refused brief turn should leave no task record"
+  assert_absent "$HOME_DIR/state/$id.git-hooks" "a refused brief turn whose thread was closed should remove its strip hooks"
   rm -rf "/tmp/fm-$id"
   pass "fm-spawn.sh --backend t3: a refused brief turn archives the thread, returns the lease, and leaves no record"
 

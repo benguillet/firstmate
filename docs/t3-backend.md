@@ -71,7 +71,7 @@ T3 owns the provider command line, so nothing Firstmate normally puts on a launc
 Each piece has a verified replacement:
 
 - The claude busy-state and turn-end hooks live in the worktree's `.claude/settings.local.json`, which T3's claude launch loads; a T3 worker therefore reports busy and idle, and wakes the watcher at turn end, exactly like a terminal worker.
-- The launch environment a terminal worker receives through pane exports (`GOTMPDIR`, `FM_TASK_ID`, `COMPACT_ADVISER_DISABLE`, the Lavish host, the trace carrier, and claude's suggestion and feedback switches) is written into that settings file's `env` map.
+- The launch environment a terminal worker receives through pane exports (`GOTMPDIR`, `FM_TASK_ID`, `COMPACT_ADVISER_DISABLE`, the Lavish host, the trace carrier, claude's suggestion and feedback switches, and the `GIT_CONFIG_COUNT`, `GIT_CONFIG_KEY_0=core.hooksPath`, and `GIT_CONFIG_VALUE_0=<hooks dir>` override that points git at the AI-trailer strip hooks) is written into that settings file's `env` map.
 - The attribution-off and feedback-draft policies are settings keys in the same file.
 - The launch brief is the thread's first turn, encoded exactly as a terminal launch encodes it, so the worker role contract and the steering-inbox path reach the worker unchanged.
 
