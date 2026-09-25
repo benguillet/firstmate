@@ -668,6 +668,9 @@ fm_backend_source() {  # <name>
     cmux)
       siblings="fm-backend-hometag-lib.sh fm-composer-lib.sh"
       ;;
+    t3)
+      siblings=
+      ;;
     *)
       return 1
       ;;
