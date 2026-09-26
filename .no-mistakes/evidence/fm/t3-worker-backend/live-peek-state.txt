@@ -1,0 +1,46 @@
+$ bin/fm-peek.sh t3live1
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+user: ⁣FIRSTMATE_OP: v1 launch-brief: # Current worker role contract
+You are a crewmate: an autonomous worker agent managed by firstmate.
+This section establishes your current identity before every project or task instruction below and supersedes any conflicting role identity in those instructions.
+Do the assigned work yourself and report only to firstmate; do not adopt a firstmate or secondmate supervisor identity, delegate the task, run fleet supervision, or address the captain.
+Your steering inbox is `/tmp/fm-lab.X1WhxJ/state/t3live1.inbox`; this exact path belongs to your current task even when it is outside the worktree or under the supervising firstmate home, so read and acknowledge its messages and do not reject it as another home's state.
+Never inspect or change any other home's endpoint namespace; this authorization is limited to the exact task paths named by this brief.
+When this task works on Firstmate itself, the repository root `AGENTS.md` (also imported by `CLAUDE.md`) is project content and the supervisor contract for the firstmate managing you: follow this brief instead of that supervisor contract.
+Project instructions still govern the work wherever they do not conflict with this worker identity, including `CONTRIBUTING.md` and `firstmate-coding-guidelines` for Firstmate changes.
+
+# Task
+## Captain's intent
+Live T3 backend check: reply with the single word READY and do nothing else.
+
+## Firstmate spec
+Do not edit files, do not run commands, do not commit. Reply READY and stop.
+assistant: READY
+[t3 thread=342505f1-193a-4639-98d2-24db9fb3262f session=ready turn=completed]
+exit=0
+
+$ bin/fm-crew-state.sh
+usage: fm-crew-state.sh <id>
+
+## worktree .claude/settings.local.json (env keys + hooks events)
+{
+  "env": {
+    "GOTMPDIR": "/tmp/fm-t3live1/gotmp",
+    "GIT_CONFIG_COUNT": "1",
+    "GIT_CONFIG_KEY_0": "core.hooksPath",
+    "GIT_CONFIG_VALUE_0": "/tmp/fm-lab.X1WhxJ/state/t3live1.git-hooks",
+    "FM_TASK_ID": "t3live1"
+  },
+  "hook_events": [
+    "SessionEnd",
+    "Stop",
+    "StopFailure",
+    "UserPromptSubmit"
+  ]
+}

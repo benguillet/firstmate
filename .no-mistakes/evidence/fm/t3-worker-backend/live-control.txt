@@ -1,0 +1,15 @@
+## T3 session before control: {"session":{"status":"ready"},"latestTurn":{"state":"completed"},"archivedAt":null}
+$ bin/fm-control.sh t3live1 interrupt
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.X1WhxJ
+interrupt-delivered t3live1 harness=claude backend=t3 verified=endpoint cancel=unconfirmed
+exit=0
+## T3 session after interrupt: {"session":{"status":"stopped"},"latestTurn":{"state":"completed"},"archivedAt":null}
+$ bin/fm-control.sh t3live1 exit
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.X1WhxJ
+already-stopped t3live1 harness=claude backend=t3 endpoint=342505f1-193a-4639-98d2-24db9fb3262f worktree=/tmp/fm-lab.X1WhxJ/pool/.treehouse/demo-2ae8fa/1/demo
+exit=0
+## T3 session after exit: {"session":{"status":"stopped"},"latestTurn":{"state":"completed"},"archivedAt":null}
+$ bin/fm-control.sh t3live1 exit   (again: idempotent)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.X1WhxJ
+already-stopped t3live1 harness=claude backend=t3 endpoint=342505f1-193a-4639-98d2-24db9fb3262f worktree=/tmp/fm-lab.X1WhxJ/pool/.treehouse/demo-2ae8fa/1/demo
+exit=0

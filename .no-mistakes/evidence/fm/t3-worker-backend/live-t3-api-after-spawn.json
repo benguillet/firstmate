@@ -1,0 +1,50 @@
+## Independent read of disposable T3 v0.0.42 server (port 3797) after live fm-spawn
+## GET /api/orchestration/shell
+{
+  "projects": [
+    {
+      "id": "8b0c9b20-47cb-457b-b758-0644e6777e56",
+      "title": "demo",
+      "workspaceRoot": "/tmp/fm-lab.X1WhxJ/projects/demo"
+    }
+  ],
+  "threads": [
+    {
+      "id": "342505f1-193a-4639-98d2-24db9fb3262f",
+      "title": "fm-t3live1",
+      "projectId": "8b0c9b20-47cb-457b-b758-0644e6777e56",
+      "worktreePath": "/tmp/fm-lab.X1WhxJ/pool/.treehouse/demo-2ae8fa/1/demo",
+      "branch": null
+    }
+  ]
+}
+## GET /api/orchestration/threads/<t3_thread_id>
+{
+  "id": "342505f1-193a-4639-98d2-24db9fb3262f",
+  "title": "fm-t3live1",
+  "projectId": "8b0c9b20-47cb-457b-b758-0644e6777e56",
+  "worktreePath": "/tmp/fm-lab.X1WhxJ/pool/.treehouse/demo-2ae8fa/1/demo",
+  "branch": null,
+  "runtimeMode": "full-access",
+  "modelSelection": {
+    "instanceId": "claudeAgent",
+    "model": "claude-fable-5-1"
+  },
+  "session": {
+    "status": "ready",
+    "providerName": "claudeAgent"
+  },
+  "latestTurn": {
+    "state": "completed"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "text": "⁣FIRSTMATE_OP: v1 launch-brief: # Current worker role contract\nYou are a crewmate: an autonomous worker agent managed by firstmate.\nThis section establishes your current identity before every project "
+    },
+    {
+      "role": "assistant",
+      "text": "READY"
+    }
+  ]
+}

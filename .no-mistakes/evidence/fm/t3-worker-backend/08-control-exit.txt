@@ -1,0 +1,14 @@
+$ bin/fm-send.sh t3gatez1 'Wake check: ...'   # on a stopped session
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.3DuFEz
+status tail: working [at=1790389024]: woke after interrupt
+== T3 session before exit: ready
+$ bin/fm-control.sh t3gatez1 exit
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.3DuFEz
+stopped t3gatez1 harness=claude backend=t3 endpoint=6150735f-52b5-4092-93c2-c44dad805adb worktree=/tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/1/proj
+exit=0
+== T3 session after exit: stopped
+   claude provider processes in the worktree: 0
+$ bin/fm-control.sh t3gatez1 exit   # again
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.3DuFEz
+already-stopped t3gatez1 harness=claude backend=t3 endpoint=6150735f-52b5-4092-93c2-c44dad805adb worktree=/tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/1/proj
+exit=0

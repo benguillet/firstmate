@@ -1,0 +1,40 @@
+== snapshot before
+state/: .guard-watcher-stale-banner .t3-session .t3-session.header home-summary.json t3gatez1.busy-gen t3gatez1.busy-state t3gatez1.control-relaunch t3gatez1.control-relaunch.brief-prior t3gatez1.control-relaunch.meta-prior t3gatez1.control-relaunch.note t3gatez1.git-hooks t3gatez1.inbox t3gatez1.meta t3gatez1.status t3gatez1.turn-ended t3hookz1.status terminal-outcomes 
+meta sha: 2627d9203e221feb
+status lines: 7
+treehouse: 1 leased ~/.treehouse/proj-bd698b/1/proj (held by fm-t3gatez1);2 available ~/.treehouse/proj-bd698b/2/proj;
+worktree exists: yes
+T3 thread 6150735f-52b5-4092-93c2-c44dad805adb: {"session":"ready","archivedAt":null} http=200 
+T3 threads: ["fm-t3gatez1"]
+T3 projects: ["proj"]
+firstmate bearer sessions listed by 't3 auth session list': 1
+
+$ bin/fm-teardown.sh t3gatez1   # no --force; the local-only branch is not landed on main
+REFUSED: local-only worktree /tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/1/proj has work not yet merged into main and not on any remote.
+commits not yet on main:
+6cca053 Add t3 proof file
+Merge the branch into local main first (bin/fm-merge-local.sh after the captain approves), or push to a fork/remote, or get the captain's explicit OK to discard, then --force.
+exit=1
+   thread after refused teardown: HTTP 200
+
+$ bin/fm-teardown.sh t3gatez1 --force
+
+🌳 Worktree returned to pool.
+teardown t3gatez1 complete (window 6150735f-52b5-4092-93c2-c44dad805adb, worktree /tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/1/proj)
+Backlog: t3gatez1 just finished (this home keeps no markdown backlog at /tmp/fm-lab.3DuFEz/data/backlog.md). Update /tmp/fm-lab.3DuFEz/data/backlog.md - move t3gatez1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+exit=0
+
+== snapshot after
+state/: .guard-watcher-stale-banner home-summary.json t3hookz1.status terminal-outcomes 
+meta sha: 
+/tmp/fm-t3-gate.joYBdy/snap.sh: line 6: /tmp/fm-lab.3DuFEz/state/t3gatez1.status: No such file or directory
+status lines: 
+treehouse: 1 available ~/.treehouse/proj-bd698b/1/proj;2 available ~/.treehouse/proj-bd698b/2/proj;
+worktree exists: yes
+T3 thread 6150735f-52b5-4092-93c2-c44dad805adb: {"session":null,"archivedAt":null} http=404 
+T3 threads: []
+T3 projects: ["proj"]
+thread 6150735f-52b5-4092-93c2-c44dad805adb read: HTTP 404
+state/.t3-session files: 0
+firstmate bearer sessions listed by 't3 auth session list': 0
+claude provider processes left in the pool: 0

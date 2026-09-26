@@ -1,0 +1,29 @@
+$ bin/fm-spawn.sh t3guiz1 /tmp/fm-t3-gate.joYBdy/proj claude --model claude-haiku-4-5 --mode local-only --yolo off --backend t3
+
+🌳 Setting up worktree...
+🌳 Leased worktree at ~/.treehouse/proj-bd698b/1/proj. Run 'treehouse return ~/.treehouse/proj-bd698b/1/proj' to release it.
+spawned t3guiz1 harness=claude kind=ship mode=local-only yolo=off window=980a527a-4769-44ec-9a22-c6616dcaf7b5 worktree=/tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/1/proj
+exit=0
+window=980a527a-4769-44ec-9a22-c6616dcaf7b5
+worktree=/tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/1/proj
+backend=t3
+t3_thread_id=980a527a-4769-44ec-9a22-c6616dcaf7b5
+t3_project_id=888e954c-ec91-49b5-a410-dc71e40ad65b
+== status: working [at=1790389489]: visible as a T3 thread
+done [at=1790389495]: ready in branch fm/t3guiz1 (commit 8594984)
+$ bin/fm-teardown.sh t3guiz1 --force
+teardown: reaping leaked worktree process(es) for t3guiz1: 1844502
+
+🌳 Worktree returned to pool.
+teardown t3guiz1 complete (window 980a527a-4769-44ec-9a22-c6616dcaf7b5, worktree /tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/1/proj)
+Backlog: t3guiz1 just finished (this home keeps no markdown backlog at /tmp/fm-lab.3DuFEz/data/backlog.md). Update /tmp/fm-lab.3DuFEz/data/backlog.md - move t3guiz1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+exit=0
+state/: .guard-watcher-stale-banner home-summary.json t3hookz1.status terminal-outcomes 
+meta sha: 
+status lines: 
+treehouse: 1 available ~/.treehouse/proj-bd698b/1/proj;2 available ~/.treehouse/proj-bd698b/2/proj;
+worktree exists: yes
+T3 thread 6150735f-52b5-4092-93c2-c44dad805adb: {"session":null,"archivedAt":null} http=404 
+T3 threads: []
+T3 projects: ["proj"]
+firstmate bearer sessions: 0

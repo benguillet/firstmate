@@ -1,0 +1,50 @@
+# Real T3 v0.0.42 server behind a proxy that answers POST /api/orchestration/dispatch with 404 (empty body) and forwards every other request.
+# FM_T3_ORIGIN=http://127.0.0.1:3792 (proxy); the token is minted by the real t3 CLI for the real server.
+
+== snapshot before
+state/: .guard-watcher-stale-banner .t3-session .t3-session.header home-summary.json t3gatez1.busy-gen t3gatez1.busy-state t3gatez1.control-relaunch t3gatez1.control-relaunch.brief-prior t3gatez1.control-relaunch.meta-prior t3gatez1.control-relaunch.note t3gatez1.git-hooks t3gatez1.inbox t3gatez1.meta t3gatez1.status t3gatez1.turn-ended 
+meta sha: 2627d9203e221feb
+status lines: 7
+treehouse: 1 leased ~/.treehouse/proj-bd698b/1/proj (held by fm-t3gatez1);
+worktree exists: yes
+T3 thread 6150735f-52b5-4092-93c2-c44dad805adb: {"session":"ready","archivedAt":null} http=200 
+T3 threads: ["fm-t3gatez1"]
+T3 projects: ["proj"]
+
+$ bin/fm-control.sh t3gatez1 interrupt
+error: backend=t3: the T3 Code server at http://127.0.0.1:3792 does not expose POST /api/orchestration/dispatch, the only write path this backend has; Firstmate's T3 backend is verified against T3 Code v0.0.42 only, and T3's Orchestrator V2 (https://github.com/pingdotgg/t3code/pull/2829) removes that endpoint and renames the thread commands, so run the verified v0.0.42 server or use another backend
+exit=1
+
+$ bin/fm-control.sh t3gatez1 exit
+error: backend=t3: the T3 Code server at http://127.0.0.1:3792 does not expose POST /api/orchestration/dispatch, the only write path this backend has; Firstmate's T3 backend is verified against T3 Code v0.0.42 only, and T3's Orchestrator V2 (https://github.com/pingdotgg/t3code/pull/2829) removes that endpoint and renames the thread commands, so run the verified v0.0.42 server or use another backend
+exit=1
+
+$ bin/fm-control.sh t3gatez1 relaunch
+error: backend=t3: the T3 Code server at http://127.0.0.1:3792 does not expose POST /api/orchestration/dispatch, the only write path this backend has; Firstmate's T3 backend is verified against T3 Code v0.0.42 only, and T3's Orchestrator V2 (https://github.com/pingdotgg/t3code/pull/2829) removes that endpoint and renames the thread commands, so run the verified v0.0.42 server or use another backend
+exit=1
+
+$ bin/fm-teardown.sh t3gatez1 --force
+error: backend=t3: the T3 Code server at http://127.0.0.1:3792 does not expose POST /api/orchestration/dispatch, the only write path this backend has; Firstmate's T3 backend is verified against T3 Code v0.0.42 only, and T3's Orchestrator V2 (https://github.com/pingdotgg/t3code/pull/2829) removes that endpoint and renames the thread commands, so run the verified v0.0.42 server or use another backend
+exit=1
+
+$ bin/fm-spawn.sh t3v2z1 /tmp/fm-t3-gate.joYBdy/proj claude --mode local-only --yolo off --backend t3
+error: backend=t3: the T3 Code server at http://127.0.0.1:3792 does not expose POST /api/orchestration/dispatch, the only write path this backend has; Firstmate's T3 backend is verified against T3 Code v0.0.42 only, and T3's Orchestrator V2 (https://github.com/pingdotgg/t3code/pull/2829) removes that endpoint and renames the thread commands, so run the verified v0.0.42 server or use another backend
+exit=1
+
+== snapshot after
+state/: .guard-watcher-stale-banner .t3-session .t3-session.header home-summary.json t3gatez1.busy-gen t3gatez1.busy-state t3gatez1.control-relaunch t3gatez1.control-relaunch.brief-prior t3gatez1.control-relaunch.meta-prior t3gatez1.control-relaunch.note t3gatez1.git-hooks t3gatez1.inbox t3gatez1.meta t3gatez1.status t3gatez1.turn-ended 
+meta sha: 2627d9203e221feb
+status lines: 7
+treehouse: 1 leased ~/.treehouse/proj-bd698b/1/proj (held by fm-t3gatez1);
+worktree exists: yes
+T3 thread 6150735f-52b5-4092-93c2-c44dad805adb: {"session":"ready","archivedAt":null} http=200 
+T3 threads: ["fm-t3gatez1"]
+T3 projects: ["proj"]
+t3v2z1 meta: absent
+
+== every request the proxy saw
+POST /api/orchestration/dispatch -> 404 (hidden)
+POST /api/orchestration/dispatch -> 404 (hidden)
+POST /api/orchestration/dispatch -> 404 (hidden)
+POST /api/orchestration/dispatch -> 404 (hidden)
+POST /api/orchestration/dispatch -> 404 (hidden)

@@ -1,0 +1,18 @@
+$ bin/fm-control.sh t3live1 relaunch --note-file $LAB/note.txt   # note: 'Live relaunch check: reply RELAUNCHED and stop.'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.X1WhxJ
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.X1WhxJ
+warning: /tmp/fm-lab.X1WhxJ/data/t3live1/launch-brief.md records no ship branch; defaulting to legacy branch fm/t3live1
+warning: /tmp/fm-lab.X1WhxJ/data/t3live1/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode local-only - confirm its definition of done matches
+notice: t3live1 ships mode=local-only while the standing posture for demo is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+relaunched t3live1 harness=claude from=claude model=default effort=default backend=t3 endpoint=342505f1-193a-4639-98d2-24db9fb3262f worktree=/tmp/fm-lab.X1WhxJ/pool/.treehouse/demo-2ae8fa/1/demo
+exit=0
+## T3 session after relaunch: {"session":{"status":"ready"},"latestTurn":{"state":"completed"},"messages":8}
+## last assistant message:
+The inbox is empty. The one earlier message is already in handled/.
+
+RELAUNCHED
+$ bin/fm-control.sh t3live1 exit
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.X1WhxJ
+stopped t3live1 harness=claude backend=t3 endpoint=342505f1-193a-4639-98d2-24db9fb3262f worktree=/tmp/fm-lab.X1WhxJ/pool/.treehouse/demo-2ae8fa/1/demo
+exit=0
+## T3 session after exit: {"session":{"status":"stopped"},"latestTurn":{"state":"completed"},"messages":8}

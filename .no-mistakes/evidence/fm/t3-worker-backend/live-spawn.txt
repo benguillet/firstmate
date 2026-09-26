@@ -1,0 +1,12 @@
+$ bin/fm-spawn.sh t3live1 $LAB/projects/demo --harness claude --mode local-only --yolo off --backend t3
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.X1WhxJ
+warning: /tmp/fm-lab.X1WhxJ/data/t3live1/launch-brief.md records no ship branch; defaulting to legacy branch fm/t3live1
+warning: /tmp/fm-lab.X1WhxJ/data/t3live1/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode local-only - confirm its definition of done matches
+notice: t3live1 ships mode=local-only while the standing posture for demo is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+A new version of treehouse is available: v2.3.0 → v3.0.1
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Leased worktree at /tmp/fm-lab.X1WhxJ/pool/.treehouse/demo-2ae8fa/1/demo. Run 'treehouse return /tmp/fm-lab.X1WhxJ/pool/.treehouse/demo-2ae8fa/1/demo' to release it.
+spawned t3live1 harness=claude kind=ship mode=local-only yolo=off window=342505f1-193a-4639-98d2-24db9fb3262f worktree=/tmp/fm-lab.X1WhxJ/pool/.treehouse/demo-2ae8fa/1/demo
+exit=0

@@ -1,0 +1,26 @@
+## firstmate sessions before teardown:
+  client: firstmate:/tmp/fm-lab.X1WhxJ | bot
+$ bin/fm-teardown.sh t3live1
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.X1WhxJ
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+A new version of treehouse is available: v2.3.0 → v3.0.1
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+teardown t3live1 complete (window 342505f1-193a-4639-98d2-24db9fb3262f, worktree /tmp/fm-lab.X1WhxJ/pool/.treehouse/demo-2ae8fa/1/demo)
+Backlog: t3live1 just finished (this home keeps no markdown backlog at /tmp/fm-lab.X1WhxJ/data/backlog.md). Update /tmp/fm-lab.X1WhxJ/data/backlog.md - move t3live1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+exit=0
+## GET thread after teardown (HTTP code + body):
+404
+{"_tag":"EnvironmentResourceNotFoundError","code":"not_found","reason":"thread_not_found","traceId":"6d3099f0560a675557e7e6e256aa12b6"}
+## shell threads (archived hidden):
+[]
+## state dir:
+terminal-outcomes
+.guard-watcher-stale-banner
+home-summary.json
+## treehouse pool:
+
+1     available    /tmp/fm-lab.X1WhxJ/pool/.treehouse/demo-2ae8fa/1/demo
+## firstmate sessions after teardown:
+0

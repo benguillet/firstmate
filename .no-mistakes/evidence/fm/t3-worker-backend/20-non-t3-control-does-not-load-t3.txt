@@ -1,0 +1,9 @@
+# A tmux-backend task record in the lab home; TMUX_TMPDIR points tmux at an empty private socket dir (no server).
+$ bash -x bin/fm-control.sh tmuxz1 interrupt   (branch HEAD)
+exit=1
+%
+#'
+error: no agent is running at task tmuxz1's recorded endpoint (state: missing); there is nothing to interrupt
+trace lines naming backends/t3.sh: 0
+trace lines calling fm_backend_t3_*: 0
+requests to the T3 server: none expected

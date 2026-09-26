@@ -1,0 +1,40 @@
+# The isolated T3 Code v0.0.42 server (t3 serve --base-dir /tmp/fm-t3-gate.joYBdy/t3home --port 3791) was stopped with SIGTERM.
+runtime file after stop: absent
+
+== snapshot before
+state/: .guard-watcher-stale-banner .t3-session .t3-session.header home-summary.json t3gatez1.busy-gen t3gatez1.busy-state t3gatez1.control-relaunch t3gatez1.control-relaunch.brief-prior t3gatez1.control-relaunch.meta-prior t3gatez1.control-relaunch.note t3gatez1.git-hooks t3gatez1.inbox t3gatez1.meta t3gatez1.status t3gatez1.turn-ended 
+meta sha: 2627d9203e221feb
+status lines: 7
+treehouse: 1 leased ~/.treehouse/proj-bd698b/1/proj (held by fm-t3gatez1);
+worktree exists: yes
+T3 server at 127.0.0.1:3791: not reachable
+
+$ bin/fm-teardown.sh t3gatez1 --force
+error: backend=t3 needs a running T3 Code server, but /tmp/fm-t3-gate.joYBdy/t3home/userdata/server-runtime.json does not exist; start it with 't3 serve' (or 't3 service install')
+exit=1
+
+$ bin/fm-control.sh t3gatez1 exit
+error: backend=t3 needs a running T3 Code server, but /tmp/fm-t3-gate.joYBdy/t3home/userdata/server-runtime.json does not exist; start it with 't3 serve' (or 't3 service install')
+exit=1
+
+== snapshot after
+state/: .guard-watcher-stale-banner .t3-session .t3-session.header home-summary.json t3gatez1.busy-gen t3gatez1.busy-state t3gatez1.control-relaunch t3gatez1.control-relaunch.brief-prior t3gatez1.control-relaunch.meta-prior t3gatez1.control-relaunch.note t3gatez1.git-hooks t3gatez1.inbox t3gatez1.meta t3gatez1.status t3gatez1.turn-ended 
+meta sha: 2627d9203e221feb
+status lines: 7
+treehouse: 1 leased ~/.treehouse/proj-bd698b/1/proj (held by fm-t3gatez1);
+worktree exists: yes
+T3 server at 127.0.0.1:3791: not reachable
+backlog-close marker: absent
+
+# Same stopped server, but with the origin given explicitly (FM_T3_ORIGIN=http://127.0.0.1:3791), so the probe reaches a closed port.
+$ bin/fm-teardown.sh t3gatez1 --force
+error: backend=t3 could not reach http://127.0.0.1:3791/api/orchestration/dispatch (connection failed or timed out after 3s)
+exit=1
+== snapshot after
+state/: .guard-watcher-stale-banner .t3-session .t3-session.header home-summary.json t3gatez1.busy-gen t3gatez1.busy-state t3gatez1.control-relaunch t3gatez1.control-relaunch.brief-prior t3gatez1.control-relaunch.meta-prior t3gatez1.control-relaunch.note t3gatez1.git-hooks t3gatez1.inbox t3gatez1.meta t3gatez1.status t3gatez1.turn-ended 
+meta sha: 2627d9203e221feb
+status lines: 7
+treehouse: 1 leased ~/.treehouse/proj-bd698b/1/proj (held by fm-t3gatez1);
+worktree exists: yes
+T3 server at 127.0.0.1:3791: not reachable
+backlog-close marker: absent

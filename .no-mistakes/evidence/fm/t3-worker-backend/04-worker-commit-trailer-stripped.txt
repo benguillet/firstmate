@@ -1,0 +1,40 @@
+== worker status file ($FM_HOME/state/t3gatez1.status)
+working [at=1790388762]: cwd=/tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/1/proj
+done [at=1790388772]: ready in branch fm/t3gatez1 (6cca0530b8441566ce674e0b69e22a27acab8c17)
+
+== message file the worker wrote ($GOTMPDIR/msg.txt, cat -A)
+Add·t3·proof·file␊
+␊
+Co-Authored-By:·Claude·<noreply@anthropic.com>␊
+
+== git log -1 --format=%B in the leased worktree (branch fm/t3gatez1)
+6cca0530b8441566ce674e0b69e22a27acab8c17
+Add t3 proof file
+
+== trailer count in commit: 0
+
+== worktree .claude/settings.local.json (env, policies, hook events)
+{
+  "env": {
+    "GOTMPDIR": "/tmp/fm-t3gatez1/gotmp",
+    "COMPACT_ADVISER_DISABLE": "1",
+    "CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION": "false",
+    "CLAUDE_CODE_SEND_FEEDBACK": "0",
+    "GIT_CONFIG_COUNT": "1",
+    "GIT_CONFIG_KEY_0": "core.hooksPath",
+    "GIT_CONFIG_VALUE_0": "/tmp/fm-lab.3DuFEz/state/t3gatez1.git-hooks",
+    "FM_TASK_ID": "t3gatez1"
+  },
+  "feedbackDrafts": "off",
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
+  "hooks": [
+    "SessionEnd",
+    "Stop",
+    "StopFailure",
+    "UserPromptSubmit"
+  ]
+}

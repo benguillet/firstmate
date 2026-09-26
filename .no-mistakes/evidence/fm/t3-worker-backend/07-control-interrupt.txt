@@ -1,0 +1,9 @@
+== before: T3 session {"session":"running","turn":"running"}; busy: v1 gen=g1790388748.1600144.29177 seq=8 state=busy source=claude-hook event=user-prompt-submit ts=1790388855
+   worker foreground command: python3 -c "import time; time.sleep(120)" pid=1638876 alive=yes
+$ bin/fm-control.sh t3gatez1 interrupt
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.3DuFEz
+interrupt-delivered t3gatez1 harness=claude backend=t3 verified=endpoint cancel=unconfirmed
+exit=0
+== after 5s: T3 session {"session":"stopped","turn":"completed"}
+   python pid 1638876 alive=no
+   busy: v1 gen=g1790388748.1600144.29177 seq=9 state=idle source=claude-hook event=session-end ts=1790388876

@@ -1,0 +1,12 @@
+## Proxy on :3798 forwards everything to the real T3 v0.0.42 server except POST /api/orchestration/dispatch, which answers 404 with an empty body (the V2 route-missing shape).
+## pool before: A new version of treehouse is available: v2.3.0 → v3.0.1
+1     available    /tmp/fm-lab.X1WhxJ/pool/.treehouse/demo-2ae8fa/1/demo
+## real-server threads before: []
+$ FM_T3_ORIGIN=http://127.0.0.1:3798 bin/fm-spawn.sh t3v2spawn $LAB/projects/demo --harness claude --mode local-only --yolo off --backend t3
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.X1WhxJ
+error: backend=t3: the T3 Code server at http://127.0.0.1:3798 does not expose POST /api/orchestration/dispatch, the only write path this backend has; Firstmate's T3 backend is verified against T3 Code v0.0.42 only, and T3's Orchestrator V2 (https://github.com/pingdotgg/t3code/pull/2829) removes that endpoint and renames the thread commands, so run the verified v0.0.42 server or use another backend
+exit=1
+## pool after: A new version of treehouse is available: v2.3.0 → v3.0.1
+1     available    /tmp/fm-lab.X1WhxJ/pool/.treehouse/demo-2ae8fa/1/demo
+## real-server threads after: []
+## task record present? none

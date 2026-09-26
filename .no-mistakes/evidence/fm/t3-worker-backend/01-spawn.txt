@@ -1,0 +1,12 @@
+$ cat $FM_HOME/config/backend
+t3
+$ bin/fm-spawn.sh t3gatez1 /tmp/fm-t3-gate.joYBdy/proj claude --model claude-haiku-4-5 --mode local-only --yolo off   # no --backend flag
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.3DuFEz
+notice: t3gatez1 ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+A new version of treehouse is available: v2.3.0 → v3.0.1
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Leased worktree at ~/.treehouse/proj-bd698b/1/proj. Run 'treehouse return ~/.treehouse/proj-bd698b/1/proj' to release it.
+spawned t3gatez1 harness=claude kind=ship mode=local-only yolo=off window=6150735f-52b5-4092-93c2-c44dad805adb worktree=/tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/1/proj
+exit=0

@@ -44,5 +44,5 @@ ok - fm-spawn.sh --backend t3: a server without the dispatch endpoint is refused
 ok - fm-control.sh: a T3 task whose server lost the dispatch endpoint is refused before its thread is read
 ok - fm-spawn.sh --relaunch on t3: a server without the dispatch endpoint is refused before the record changes
 ok - fm-teardown.sh on t3: a server without the dispatch endpoint is refused before any destructive step, even under --force
-bash tests/fm-backend-t3.test.sh  11.16s user 19.92s system 76% cpu 40.567 total
-rc=0
+bash tests/fm-backend-t3.test.sh  11.74s user 23.93s system 79% cpu 44.874 total
+exit=0

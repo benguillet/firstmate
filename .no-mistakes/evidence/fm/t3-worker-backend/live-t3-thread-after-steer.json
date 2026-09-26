@@ -1,0 +1,30 @@
+{
+  "session": {
+    "status": "ready"
+  },
+  "latestTurn": {
+    "state": "completed"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "text": "⁣FIRSTMATE_OP: v1 launch-brief: # Current worker role contract\nYou are a crewmate: an autonomous worker agent managed by firstmate.\nThis section establishes your current identity before every project or task instruction "
+    },
+    {
+      "role": "assistant",
+      "text": "READY"
+    },
+    {
+      "role": "user",
+      "text": ": Firstmate instruction waiting: list '/tmp/fm-lab.X1WhxJ/state/t3live1.inbox'/*.msg and, in numeric order, read and act on each, then mv each handled file to '/tmp/fm-lab.X1WhxJ/state/t3live1.inbox'/handled/."
+    },
+    {
+      "role": "assistant",
+      "text": "I will list and read the inbox messages."
+    },
+    {
+      "role": "assistant",
+      "text": "STEERED"
+    }
+  ]
+}

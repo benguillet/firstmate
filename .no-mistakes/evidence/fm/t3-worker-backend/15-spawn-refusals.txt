@@ -1,0 +1,52 @@
+# Against the real isolated T3 v0.0.42 server (discovered through $T3CODE_HOME/userdata/server-runtime.json).
+== snapshot before
+state/: .guard-watcher-stale-banner home-summary.json t3hookz1.status terminal-outcomes 
+meta sha: 
+/tmp/fm-t3-gate.joYBdy/snap.sh: line 6: /tmp/fm-lab.3DuFEz/state/t3gatez1.status: No such file or directory
+status lines: 
+treehouse: 1 available ~/.treehouse/proj-bd698b/1/proj;2 available ~/.treehouse/proj-bd698b/2/proj;
+worktree exists: yes
+T3 thread 6150735f-52b5-4092-93c2-c44dad805adb: {"session":null,"archivedAt":null} http=404 
+T3 threads: []
+T3 projects: ["proj"]
+
+$ bin/fm-spawn.sh t3v2z1 /tmp/fm-t3-gate.joYBdy/proj codex --mode local-only --yolo off --backend t3
+error: backend=t3 supports the claude harness family only (got 'codex'); T3 owns the provider command line, and only claude's settings-file wiring is verified to load through it
+exit=1
+
+$ bin/fm-spawn.sh t3smz1 claude --backend t3 --secondmate
+error: backend=t3 does not support --secondmate spawns; a secondmate is a firstmate primary whose supervision protocol has no T3 shape yet
+exit=1
+
+$ printf 'work
+' > $FM_HOME/config/claude-account; bin/fm-spawn.sh t3v2z1 /tmp/fm-t3-gate.joYBdy/proj claude --mode local-only --yolo off --backend t3
+error: config/claude-account must hold 'ordinary' or one absolute path on a single line with no control characters: /tmp/fm-lab.3DuFEz/config/claude-account
+exit=1
+
+== snapshot after
+state/: .guard-watcher-stale-banner .t3-session .t3-session.header home-summary.json t3hookz1.status terminal-outcomes 
+meta sha: 
+/tmp/fm-t3-gate.joYBdy/snap.sh: line 6: /tmp/fm-lab.3DuFEz/state/t3gatez1.status: No such file or directory
+status lines: 
+treehouse: 1 available ~/.treehouse/proj-bd698b/1/proj;2 available ~/.treehouse/proj-bd698b/2/proj;
+worktree exists: yes
+T3 thread 6150735f-52b5-4092-93c2-c44dad805adb: {"session":null,"archivedAt":null} http=404 
+T3 threads: []
+T3 projects: ["proj"]
+records: 0 task metas
+
+# Retry of the pin case with a well-formed pin (an absolute account directory):
+$ printf '%s
+' /tmp/fm-t3-gate.joYBdy/claude-acct > $FM_HOME/config/claude-account; bin/fm-spawn.sh t3v2z1 /tmp/fm-t3-gate.joYBdy/proj claude --mode local-only --yolo off --backend t3
+error: config/claude-account pins Claude workers to /tmp/fm-t3-gate.joYBdy/claude-acct, which is not signed in (claude auth status); sign in with CLAUDE_CONFIG_DIR=/tmp/fm-t3-gate.joYBdy/claude-acct claude, then /login, or change the pin
+exit=1
+== snapshot after
+state/: .guard-watcher-stale-banner .t3-session .t3-session.header home-summary.json t3hookz1.status terminal-outcomes 
+meta sha: 
+status lines: 
+treehouse: 1 available ~/.treehouse/proj-bd698b/1/proj;2 available ~/.treehouse/proj-bd698b/2/proj;
+worktree exists: yes
+T3 thread 6150735f-52b5-4092-93c2-c44dad805adb: {"session":null,"archivedAt":null} http=404 
+T3 threads: []
+T3 projects: ["proj"]
+records: 0 task metas

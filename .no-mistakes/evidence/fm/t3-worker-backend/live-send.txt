@@ -1,0 +1,8 @@
+$ bin/fm-crew-state.sh t3live1
+state: unknown · source: none · no current-state source available
+exit=0
+
+$ bin/fm-send.sh t3live1 'Reply with the single word STEERED and nothing else.'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.X1WhxJ
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+exit=0

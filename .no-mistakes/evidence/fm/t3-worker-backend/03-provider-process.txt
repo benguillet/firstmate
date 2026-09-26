@@ -1,0 +1,4 @@
+claude provider pid=1600918 (parent=1579760 = t3 serve --base-dir /tmp/fm-t3-gate.joYBdy/t3home)
+readlink /proc/1600918/cwd: /tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/1/proj
+args: claude --output-format stream-json --verbose --input-format stream-json --model claude-haiku-4-5 --permission-prompt-tool stdio --mcp-config {"mcpServers":{"t3-code":{"type":"http","url":"http://127.0.0.1:3791/mcp","headers":{"Authorization":"Bearer <redacted>"}}}} --setting-sources=user,project,local --permission-mode bypassPermissions --allow-dangerously-skip-permissions --include-partial-messages --add-dir /tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/1/proj --add-dir /tmp/fm-t3-gate.joYBdy/t3home/userdata/attachments --session-id=793b3474-5d96-49fd-b66b-3b9baccfcde8 
+project root (never the cwd): /tmp/fm-t3-gate.joYBdy/proj

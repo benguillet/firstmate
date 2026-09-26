@@ -38,5 +38,4 @@ ok - fm-control interrupt: grok reports delivery without claiming cancellation
 ok - fm-control interrupt: grok's idle footer does not confirm cancellation
 ok - fm-control: a lifecycle command to a secondmate is unmarked and opens no reply expectation
 ok - fm-control's arrival leaves fm-send's from-firstmate marking untouched
-bash tests/$t.test.sh  8.09s user 16.01s system 64% cpu 37.092 total
-rc=0
+exit=0

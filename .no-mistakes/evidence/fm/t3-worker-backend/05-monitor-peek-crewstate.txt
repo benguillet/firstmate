@@ -1,0 +1,59 @@
+$ bin/fm-peek.sh t3gatez1 40
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+A correction edits only the wrong text: do not run `/home/ubuntu/.no-mistakes/worktrees/945fa0d82f20/01M3D8HZA7EHHZ6QTVSPK23ZNQ/bin/fm-ensure-agents-md.sh`, create either file, or add sections, headings, or pointers alongside it.
+
+# Definition of done
+Delivery contract: mode=local-only
+Ship branch: fm/t3gatez1
+This task ships **local-only**: no remote, no PR, no pipeline.
+The task is complete only when committed on your branch `fm/t3gatez1`. Do NOT push, do NOT open a PR, do NOT merge.
+A `done:` is accepted when the named head is on this project's shared local branch, not only on a detached copy; the check tests that head, not merely that a branch moved.
+Keep your branch a clean fast-forward onto the current default branch - if `main` has advanced, rebase onto it so the eventual merge stays a fast-forward.
+When it is implemented and committed, append `done [at=<epoch>]: ready in branch fm/t3gatez1` to the status file and stop.
+The configured merge authority approves the ready branch, then firstmate merges it into local `main` through the guarded fast-forward path.
+assistant: Verifying isolation and executing the task.
+[tool] Command run started
+[tool] Command run
+[tool] Command run started
+[tool] Command run
+[tool] Command run
+[tool] Command run started
+[tool] Command run
+[tool] Command run
+[tool] Command run started
+[tool] Command run
+[tool] Command run
+[tool] Command run started
+[tool] Command run
+[tool] Command run started
+[tool] Command run
+[tool] Command run started
+[tool] Command run
+assistant: Task complete. I have:
+
+1. **Verified isolation** — working in isolated worktree at `/tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/1/proj` (confirmed via `git rev-parse --git-dir` showing `.git/worktrees/proj`)
+2. **Created branch** `fm/t3gatez1`
+3. **Created proof file** — `t3-proof.txt` with content `hello from t3`
+4. **Created commit message** — msg.txt in GOTMPDIR with the exact three-line format
+5. **Committed** — via `git add t3-proof.txt` and `git commit -F msg.txt`
+6. **Reported status** — appended working and done lines to the status file with commit SHA `6cca0530b8441566ce674e0b69e22a27acab8c17`
+
+Branch `fm/t3gatez1` is ready for firstmate to merge into local `main`.
+[t3 thread=6150735f-52b5-4092-93c2-c44dad805adb session=ready turn=completed]
+exit=0
+
+$ bin/fm-crew-state.sh t3gatez1
+state: done · source: status-log · ready in branch fm/t3gatez1 (6cca0530b8441566ce674e0b69e22a27acab8c17)
+exit=0
+
+== busy record
+v1 gen=g1790388748.1600144.29177 seq=3 state=idle source=claude-hook event=stop ts=1790388777
+
+/tmp/fm-lab.3DuFEz/state/t3gatez1.turn-ended
+turn-ended marker present

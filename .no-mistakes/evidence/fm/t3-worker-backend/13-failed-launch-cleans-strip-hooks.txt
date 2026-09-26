@@ -1,0 +1,51 @@
+# Fault injection: FM_T3_ORIGIN=http://127.0.0.1:3793, a proxy that forwards every request to the real T3 v0.0.42 server
+# except the brief's thread.turn.start dispatch, which it refuses with 500 orchestration_dispatch_failed.
+== snapshot before
+state/: .guard-watcher-stale-banner .t3-session .t3-session.header home-summary.json t3gatez1.busy-gen t3gatez1.busy-state t3gatez1.control-relaunch t3gatez1.control-relaunch.brief-prior t3gatez1.control-relaunch.meta-prior t3gatez1.control-relaunch.note t3gatez1.git-hooks t3gatez1.inbox t3gatez1.meta t3gatez1.status t3gatez1.turn-ended terminal-outcomes 
+meta sha: 2627d9203e221feb
+status lines: 7
+treehouse: 1 leased ~/.treehouse/proj-bd698b/1/proj (held by fm-t3gatez1);2 available ~/.treehouse/proj-bd698b/2/proj;
+worktree exists: yes
+T3 thread 6150735f-52b5-4092-93c2-c44dad805adb: {"session":"ready","archivedAt":null} http=200 
+T3 threads: ["fm-t3gatez1"]
+T3 projects: ["proj"]
+
+$ bin/fm-spawn.sh t3hookz1 /tmp/fm-t3-gate.joYBdy/proj claude --model claude-haiku-4-5 --mode local-only --yolo off --backend t3
+
+🌳 Setting up worktree...
+🌳 Leased worktree at ~/.treehouse/proj-bd698b/2/proj. Run 'treehouse return ~/.treehouse/proj-bd698b/2/proj' to release it.
+error: t3 dispatch thread.turn.start failed: HTTP 500 (orchestration_dispatch_failed)
+error: the launch brief could not be sent to T3 thread 7ad8dbf5-2b6f-4a4a-9b4a-005d66355f1a
+exit=1
+
+== snapshot after
+state/: .guard-watcher-stale-banner .t3-session .t3-session.header home-summary.json t3gatez1.busy-gen t3gatez1.busy-state t3gatez1.control-relaunch t3gatez1.control-relaunch.brief-prior t3gatez1.control-relaunch.meta-prior t3gatez1.control-relaunch.note t3gatez1.git-hooks t3gatez1.inbox t3gatez1.meta t3gatez1.status t3gatez1.turn-ended t3hookz1.status terminal-outcomes 
+meta sha: 2627d9203e221feb
+status lines: 7
+treehouse: 1 leased ~/.treehouse/proj-bd698b/1/proj (held by fm-t3gatez1);2 available ~/.treehouse/proj-bd698b/2/proj;
+worktree exists: yes
+T3 thread 6150735f-52b5-4092-93c2-c44dad805adb: {"session":"ready","archivedAt":null} http=200 
+T3 threads: ["fm-t3gatez1"]
+T3 projects: ["proj"]
+fm-t3hookz1 in the real server's shell (archived threads are hidden): absent
+t3hookz1 meta: absent
+t3hookz1 AI-trailer strip hooks dir (state/t3hookz1.git-hooks): absent
+t3hookz1 status: failed [at=1790389373]: the launch brief could not be sent to T3 thread 7ad8dbf5-2b6f-4a4a-9b4a-005d66355f1a
+
+== every request the proxy saw
+POST /api/orchestration/dispatch  -> 400 (forwarded)
+GET /api/orchestration/shell  -> 200 (forwarded)
+GET /api/orchestration/shell  -> 200 (forwarded)
+POST /api/orchestration/dispatch thread.create -> 200 (forwarded)
+GET /api/orchestration/threads/7ad8dbf5-2b6f-4a4a-9b4a-005d66355f1a  -> 200 (forwarded)
+GET /api/orchestration/threads/7ad8dbf5-2b6f-4a4a-9b4a-005d66355f1a  -> 200 (forwarded)
+GET /api/orchestration/threads/6150735f-52b5-4092-93c2-c44dad805adb  -> 200 (forwarded)
+GET /api/orchestration/threads/7ad8dbf5-2b6f-4a4a-9b4a-005d66355f1a  -> 200 (forwarded)
+GET /api/orchestration/threads/6150735f-52b5-4092-93c2-c44dad805adb  -> 200 (forwarded)
+GET /api/orchestration/threads/7ad8dbf5-2b6f-4a4a-9b4a-005d66355f1a  -> 200 (forwarded)
+GET /api/orchestration/threads/6150735f-52b5-4092-93c2-c44dad805adb  -> 200 (forwarded)
+POST dispatch thread.turn.start -> 500 (injected)
+GET /api/orchestration/threads/7ad8dbf5-2b6f-4a4a-9b4a-005d66355f1a  -> 200 (forwarded)
+GET /api/orchestration/threads/7ad8dbf5-2b6f-4a4a-9b4a-005d66355f1a  -> 200 (forwarded)
+POST /api/orchestration/dispatch thread.archive -> 200 (forwarded)
+GET /api/orchestration/threads/7ad8dbf5-2b6f-4a4a-9b4a-005d66355f1a  -> 404 (forwarded)

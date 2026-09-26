@@ -1,0 +1,20 @@
+{
+  "projects": [
+    {
+      "id": "888e954c-ec91-49b5-a410-dc71e40ad65b",
+      "title": "proj",
+      "workspaceRoot": "/tmp/fm-t3-gate.joYBdy/proj"
+    }
+  ],
+  "threads": [
+    {
+      "id": "6150735f-52b5-4092-93c2-c44dad805adb",
+      "title": "fm-t3gatez1",
+      "projectId": "888e954c-ec91-49b5-a410-dc71e40ad65b",
+      "worktreePath": "/tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/1/proj",
+      "branch": null,
+      "runtimeMode": "full-access",
+      "archivedAt": null
+    }
+  ]
+}

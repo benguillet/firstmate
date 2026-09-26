@@ -1,0 +1,19 @@
+== before: window=6150735f-52b5-4092-93c2-c44dad805adb spawn_gen=s1790388748.1599536.15394 t3_thread_id=6150735f-52b5-4092-93c2-c44dad805adb 
+   user turns on thread: 5
+$ bin/fm-control.sh t3gatez1 relaunch --note 'Relaunch check: the work is already committed; append one done status line naming the same commit and stop.'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.3DuFEz
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.3DuFEz
+notice: t3gatez1 ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+relaunched t3gatez1 harness=claude from=claude model=claude-haiku-4-5 effort=default backend=t3 endpoint=6150735f-52b5-4092-93c2-c44dad805adb worktree=/tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/1/proj
+exit=0
+== after: window=6150735f-52b5-4092-93c2-c44dad805adb spawn_gen=s1790389044.1694303.23932 t3_thread_id=6150735f-52b5-4092-93c2-c44dad805adb 
+   user turns on thread: 6
+   threads in T3 shell for this project: [{"id":"6150735f-52b5-4092-93c2-c44dad805adb","title":"fm-t3gatez1"}]
+== status file
+working [at=1790388762]: cwd=/tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/1/proj
+done [at=1790388772]: ready in branch fm/t3gatez1 (6cca0530b8441566ce674e0b69e22a27acab8c17)
+working [at=1790388813]: steer received via t3
+working [at=1790388859]: sleep finished
+working [at=1790389019]: python wait finished
+working [at=1790389024]: woke after interrupt
+done [at=1790389053]: ready in branch fm/t3gatez1 (6cca0530b8441566ce674e0b69e22a27acab8c17)

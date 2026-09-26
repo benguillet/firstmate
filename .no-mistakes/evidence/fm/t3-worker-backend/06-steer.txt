@@ -1,0 +1,15 @@
+$ FM_HOME=$LAB bin/fm-send.sh t3gatez1 'Steer check: append one working status line that says exactly: steer received via t3. Change nothing else.'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.3DuFEz
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+exit=0
+
+== status file after the steer
+working [at=1790388762]: cwd=/tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/1/proj
+done [at=1790388772]: ready in branch fm/t3gatez1 (6cca0530b8441566ce674e0b69e22a27acab8c17)
+working [at=1790388813]: steer received via t3
+== inbox record moved to handled/
+/tmp/fm-lab.3DuFEz/state/t3gatez1.inbox/handled/001.msg
+schema=fm-task-inbox.v1
+at=2026-09-26T02:13:26Z
+--
+Steer check: append one working status line that says exactly: steer received via t3. Change nothing else.

@@ -1,0 +1,58 @@
+# FM_T3_START_WAIT=0 makes the spawn check the session once, right after the brief turn is sent, so the launch reads as never started.
+== snapshot before
+state/: .guard-watcher-stale-banner .t3-session .t3-session.header home-summary.json t3gatez1.busy-gen t3gatez1.busy-state t3gatez1.control-relaunch t3gatez1.control-relaunch.brief-prior t3gatez1.control-relaunch.meta-prior t3gatez1.control-relaunch.note t3gatez1.git-hooks t3gatez1.inbox t3gatez1.meta t3gatez1.status t3gatez1.turn-ended 
+meta sha: 2627d9203e221feb
+status lines: 7
+treehouse: 1 leased ~/.treehouse/proj-bd698b/1/proj (held by fm-t3gatez1);
+worktree exists: yes
+T3 thread 6150735f-52b5-4092-93c2-c44dad805adb: {"session":"ready","archivedAt":null} http=200 
+T3 threads: ["fm-t3gatez1"]
+T3 projects: ["proj"]
+
+$ FM_T3_START_WAIT=0 bin/fm-spawn.sh t3failz1 /tmp/fm-t3-gate.joYBdy/proj claude --model claude-haiku-4-5 --mode local-only --yolo off --backend t3
+
+🌳 Setting up worktree...
+🌳 Leased worktree at ~/.treehouse/proj-bd698b/2/proj. Run 'treehouse return ~/.treehouse/proj-bd698b/2/proj' to release it.
+spawned t3failz1 harness=claude kind=ship mode=local-only yolo=off window=7210c97c-6713-415a-8001-81fd5d5882c5 worktree=/tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/2/proj
+exit=0
+
+== snapshot after
+state/: .guard-watcher-stale-banner .t3-session .t3-session.header home-summary.json t3failz1.busy-gen t3failz1.busy-state t3failz1.git-hooks t3failz1.meta t3gatez1.busy-gen t3gatez1.busy-state t3gatez1.control-relaunch t3gatez1.control-relaunch.brief-prior t3gatez1.control-relaunch.meta-prior t3gatez1.control-relaunch.note t3gatez1.git-hooks t3gatez1.inbox t3gatez1.meta t3gatez1.status t3gatez1.turn-ended 
+meta sha: 2627d9203e221feb
+status lines: 7
+treehouse: 1 leased ~/.treehouse/proj-bd698b/1/proj (held by fm-t3gatez1);2 leased ~/.treehouse/proj-bd698b/2/proj (held by fm-t3failz1);
+worktree exists: yes
+T3 thread 6150735f-52b5-4092-93c2-c44dad805adb: {"session":"ready","archivedAt":null} http=200 
+T3 threads: ["fm-t3gatez1","fm-t3failz1"]
+T3 projects: ["proj"]
+t3failz1 meta: present
+t3failz1 git-hooks dir: PRESENT
+t3failz1 status: 
+
+== t3failz1 status: done [at=1790389236]: released worktree lease for completed t3gatez1 task
+$ bin/fm-teardown.sh t3failz1 --force   # t3gatez1 still holds a T3 task in this home
+teardown: reaping leaked worktree process(es) for t3failz1: 1735089
+A new version of treehouse is available: v2.3.0 → v3.0.1
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+teardown t3failz1 complete (window 7210c97c-6713-415a-8001-81fd5d5882c5, worktree /tmp/fm-t3-gate.joYBdy/user-home/.treehouse/proj-bd698b/2/proj)
+Backlog: t3failz1 just finished (this home keeps no markdown backlog at /tmp/fm-lab.3DuFEz/data/backlog.md). Update /tmp/fm-lab.3DuFEz/data/backlog.md - move t3failz1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+exit=0
+== thread 7210c97c-6713-415a-8001-81fd5d5882c5 read after teardown: HTTP 404
+state/: .guard-watcher-stale-banner .t3-session .t3-session.header home-summary.json t3gatez1.busy-gen t3gatez1.busy-state t3gatez1.control-relaunch t3gatez1.control-relaunch.brief-prior t3gatez1.control-relaunch.meta-prior t3gatez1.control-relaunch.note t3gatez1.git-hooks t3gatez1.inbox t3gatez1.meta t3gatez1.status t3gatez1.turn-ended terminal-outcomes 
+meta sha: 2627d9203e221feb
+status lines: 7
+treehouse: 1 available ~/.treehouse/proj-bd698b/1/proj;2 available ~/.treehouse/proj-bd698b/2/proj;
+worktree exists: yes
+T3 thread 6150735f-52b5-4092-93c2-c44dad805adb: {"session":"ready","archivedAt":null} http=200 
+T3 threads: ["fm-t3gatez1"]
+T3 projects: ["proj"]
+firstmate bearer session still listed (another T3 task remains): 1
+
+# Note on the test itself: this second worker (claude-haiku-4-5, full-access mode) read its deliberately vague brief
+# ("Check the cleanup of a T3 launch that never starts") as a cleanup job and edited treehouse-state.json itself,
+# removing t3gatez1's lease on slot 1 (its own transcript shows `Edit .../treehouse-state.json` and a status line
+# "released worktree lease for completed t3gatez1 task"). Firstmate's teardown only returned slot 2.
+# The tester restored slot 1's lease record before continuing. This is worker behavior from a test brief, not a
+# firstmate code path; a terminal-backend worker in full-access mode has the same reach.
